@@ -20,12 +20,10 @@ class MagmanApp {
     this.cargoCollected = 0;
     this.launchedRocks = [];
     
-    // Movimento por toque na tela relativo ao avatar (-1: esquerda, 0: parado, 1: direita)
     this.touchMoveDirection = 0;
     this.isTouchingScreen = false;
 
-    // Cronômetro da missão (10 minutos = 600 segundos)
-    this.missionTimeRemaining = CONFIG.MISSION_TIME_SECONDS || 600;
+    this.missionTimeRemaining = CONFIG.MISSION_TIME_SECONDS || 240;
     this.lastFrameTime = performance.now();
 
     this.initDOM();
@@ -48,7 +46,7 @@ class MagmanApp {
       if (el) el.onclick = handler;
     };
 
-    // BOTÃO ENTRAR (Com leitura segura de auth-remember)
+    // BOTÃO ENTRAR
     const btnLogin = document.getElementById('btn-login');
     if (btnLogin) {
       btnLogin.addEventListener('click', async (e) => {
@@ -77,7 +75,7 @@ class MagmanApp {
       });
     }
 
-    // BOTÃO REGISTAR (Com leitura segura de auth-remember)
+    // BOTÃO REGISTAR
     const btnSignup = document.getElementById('btn-signup');
     if (btnSignup) {
       btnSignup.addEventListener('click', async (e) => {
@@ -111,13 +109,11 @@ class MagmanApp {
       });
     }
 
-    // BOTÃO LOGOUT (SAIR)
     safeBind('btn-logout', async () => {
       await DatabaseService.logout();
       this.switchView('screen-auth');
     });
 
-    // MODAL DE DICAS PRÉ-MISSÃO
     safeBind('btn-open-tips', () => {
       const modal = document.getElementById('modal-tips');
       if (modal) modal.classList.remove('hidden');
@@ -138,7 +134,6 @@ class MagmanApp {
 
     safeBind('btn-cancel-briefing', () => this.switchView('screen-planets'));
 
-    // MODAIS DE FIM DE JOGO
     safeBind('btn-gameover-retry', () => {
       const modal = document.getElementById('modal-gameover');
       if (modal) modal.classList.add('hidden');
@@ -170,13 +165,10 @@ class MagmanApp {
   updateProfileUI() {
     const p = DatabaseService.profile || {};
     const nameEl = document.getElementById('user-display-name');
-    if (nameEl) {
-      nameEl.innerText = p.username || "Piloto";
-    }
+    if (nameEl) nameEl.innerText = p.username || "Piloto";
+
     const countEl = document.getElementById('user-conquered-count');
-    if (countEl) {
-      countEl.innerText = `${p.conqueredPlanets || 0}/50 Planetas`;
-    }
+    if (countEl) countEl.innerText = `${p.conqueredPlanets || 0}/50 Planetas`;
   }
 
   drawLoginAvatar() {
@@ -195,7 +187,6 @@ class MagmanApp {
     ctx.fillRect(18, 14, 8, 24);
     ctx.fillRect(64, 14, 8, 24);
 
-    // Luvas pretas no preview
     ctx.fillStyle = "#0f172a";
     ctx.fillRect(17, 10, 10, 6);
     ctx.fillRect(63, 10, 10, 6);
@@ -218,6 +209,14 @@ class MagmanApp {
     if (this.camera) {
       this.camera.viewportWidth = w;
       this.camera.viewportHeight = h;
+    }
+
+    if (this.terrain && typeof this.terrain.resize === 'function') {
+      this.terrain.resize(h);
+      if (this.magman && this.magman.y > this.terrain.groundStartY) {
+        this.magman.y = this.terrain.groundStartY - this.magman.height;
+        this.magman.vy = 0;
+      }
     }
   }
 
@@ -270,12 +269,11 @@ class MagmanApp {
     const shipInfoEl = document.getElementById('briefing-ship-info');
     if (shipInfoEl) shipInfoEl.innerText = `${this.activeShip.name} (Capacidade: 10 blocos magnéticos suspensos).`;
 
-    // Proteção rigorosa contra undefined para toFixed
     const baseForce = Number(planet.baseRepulseForce) || 8.2;
 
     const descEl = document.getElementById('briefing-tactical-desc');
     if (descEl) {
-      descEl.innerText = `Força magnética de salto básica do solo: ${baseForce.toFixed(1)} N. Extraia 10 blocos e lance-os na nave antes que os 10 minutos se esgotem.`;
+      descEl.innerText = `Força magnética de salto básica do solo: ${baseForce.toFixed(1)} N. Extraia 10 blocos e lance-os na nave antes que os 4 minutos se esgotem.`;
     }
 
     this.switchView('screen-briefing');
@@ -298,7 +296,6 @@ class MagmanApp {
   }
 
   bindControls() {
-    // 1. Movimentação por touch screen relativo ao astronauta
     if (this.viewport) {
       const handleTouchMovement = (clientX) => {
         if (!this.magman || !this.camera) return;
@@ -312,9 +309,7 @@ class MagmanApp {
       });
 
       this.viewport.addEventListener('pointermove', (e) => {
-        if (this.isTouchingScreen) {
-          handleTouchMovement(e.clientX);
-        }
+        if (this.isTouchingScreen) handleTouchMovement(e.clientX);
       });
 
       const stopTouch = () => {
@@ -325,19 +320,16 @@ class MagmanApp {
       this.viewport.addEventListener('pointercancel', stopTouch);
     }
 
-    // 2. Botão Inverter
     const btnPolarity = document.getElementById('ctrl-polarity');
     if (btnPolarity) {
       btnPolarity.onclick = () => this.toggleMagmanPolarity();
     }
 
-    // 3. Botão Ação Dinâmica (Pegar / Jogar)
     const btnAction = document.getElementById('ctrl-action');
     if (btnAction) {
       btnAction.onclick = () => this.triggerAction();
     }
 
-    // Suporte a teclado
     window.addEventListener('keydown', (e) => {
       if (e.code === 'ArrowLeft' || e.code === 'KeyA') this.touchMoveDirection = -1;
       if (e.code === 'ArrowRight' || e.code === 'KeyD') this.touchMoveDirection = 1;
@@ -390,19 +382,64 @@ class MagmanApp {
     }
   }
 
+  updateLivesUI() {
+    const lives = this.magman ? this.magman.lives : 3;
+    for (let i = 1; i <= 3; i++) {
+      const slot = document.getElementById(`life-${i}`);
+      if (slot) {
+        if (i <= lives) {
+          slot.classList.remove('lost');
+        } else {
+          slot.classList.add('lost');
+        }
+      }
+    }
+  }
+
+  handleDamage(reason) {
+    if (!this.magman || this.magman.isInvulnerable) return;
+
+    const damaged = this.magman.takeDamage();
+    if (damaged) {
+      this.updateLivesUI();
+
+      if (this.particles && typeof this.particles.emit === 'function') {
+        this.particles.emit(
+          this.magman.x + this.magman.width / 2,
+          this.magman.y + this.magman.height / 2,
+          '#ef4444',
+          14
+        );
+      }
+
+      if (this.magman.lives <= 0) {
+        this.triggerGameOver(reason);
+      }
+    }
+  }
+
   triggerAction() {
     if (!this.magman) return;
 
+    // AÇÃO: JOGAR (Libera o bloco em direção à plataforma orbital)
     if (this.magman.carryingRock) {
       const rock = this.magman.carryingRock;
+      const bSize = CONFIG.BLOCK_SIZE || 36;
       rock.isLaunched = true;
-      rock.vy = CONFIG.LAUNCH_IMPULSE_VY;
+      rock.size = bSize;
+
+      // Inicia o lançamento centralizado no astronauta no momento do arremesso
+      rock.x = this.magman.x + (this.magman.width / 2) - (bSize / 2);
+      rock.y = this.magman.y - bSize - 4;
+      rock.vy = CONFIG.LAUNCH_IMPULSE_VY || -12.0;
+
       this.launchedRocks.push(rock);
       this.magman.carryingRock = null;
       this.updateActionBtnUI();
       return;
     }
 
+    // AÇÃO: PEGAR (Extrai o bloco do solo abrindo a fossa)
     const block = this.terrain.mineDirectional(
       this.magman.x,
       this.magman.y,
@@ -411,18 +448,17 @@ class MagmanApp {
       this.magman.facing
     );
 
-   if (block) {
-      // Efeito imediato de fragmentação no chão
-      if (this.particles) {
+    if (block) {
+      if (this.particles && typeof this.particles.shatterBlock === 'function') {
         this.particles.shatterBlock(block.x + block.size / 2, block.y + block.size / 2, block.type);
       }
 
       this.magman.carryingRock = {
         type: block.type,
         polarityTop: block.polarityTop,
-        size: CONFIG.BLOCK_SIZE,
-        x: this.magman.x + (this.magman.width / 2) - (CONFIG.BLOCK_SIZE / 2),
-        y: this.magman.y - CONFIG.BLOCK_SIZE - 4,
+        size: CONFIG.BLOCK_SIZE || 36,
+        x: this.magman.x + (this.magman.width / 2) - ((CONFIG.BLOCK_SIZE || 36) / 2),
+        y: this.magman.y - (CONFIG.BLOCK_SIZE || 36) - 4,
         isLaunched: false,
         vy: 0
       };
@@ -436,7 +472,7 @@ class MagmanApp {
 
     this.cargoCollected = 0;
     this.launchedRocks = [];
-    this.missionTimeRemaining = CONFIG.MISSION_TIME_SECONDS || 600;
+    this.missionTimeRemaining = CONFIG.MISSION_TIME_SECONDS || 240;
     this.lastFrameTime = performance.now();
 
     const cargoHud = document.getElementById('hud-cargo');
@@ -455,8 +491,10 @@ class MagmanApp {
     this.magman = new Magman(0, vHeight - 240);
     this.crabs = new CrabManager();
 
-    this.crabs.spawnWave(this.camera.x, vWidth, this.terrain.groundStartY);
+    this.magman.lives = 3;
+    this.updateLivesUI();
 
+    this.crabs.spawnWave(this.camera.x, vWidth, this.terrain.groundStartY);
     this.updatePolarityUI();
 
     this.running = true;
@@ -476,7 +514,7 @@ class MagmanApp {
   }
 
   update(deltaSec) {
-    // 1. Cronômetro da missão
+    // 1. Cronômetro
     this.missionTimeRemaining -= deltaSec;
     if (this.missionTimeRemaining <= 0) {
       this.missionTimeRemaining = 0;
@@ -487,36 +525,36 @@ class MagmanApp {
     this.updateTimerBarUI();
 
     // 2. Avatar e Câmera
-    this.magman.update(this.touchMoveDirection, this.terrain);
+    this.magman.update(this.touchMoveDirection, this.terrain, deltaSec);
     this.camera.follow(this.magman.x);
     this.terrain.update();
     this.ship.update(this.magman.x, this.magman.width);
     this.particles.update();
 
-    // 3. Caranguejos Espaciais
+    // 3. Inimigos: Caranguejos
     this.crabs.updateTimer(deltaSec);
     if (this.crabs.spawnTimer === 0 && this.crabs.crabs.length < 20) {
       this.crabs.spawnWave(this.camera.x, this.viewport.width, this.terrain.groundStartY);
     }
     this.crabs.update(this.magman, this.terrain, (failMsg) => {
-      this.triggerGameOver(failMsg);
+      this.handleDamage(failMsg);
     });
 
-    // 4. Queda fatal no manto magmático
+    // 4. Queda fatal
     if (this.magman.y > this.terrain.getCoreThresholdY()) {
       this.triggerGameOver("Magman desceu além da litosfera e caiu no manto superaquecido!");
       return;
     }
 
-    // 5. Asteroides no corredor intermediário
-    // 5. Asteroides acompanhando a câmera no terreno infinito
+    // 5. Asteroides em órbita com horizonte adaptativo
     this.asteroids.update(
       this.magman,
-      (failMsg) => { this.triggerGameOver(failMsg); },
+      (failMsg) => { this.handleDamage(failMsg); },
       this.camera.x,
       this.viewport.width
     );
-    // 6. Colisão de asteroides com caixas acopladas na plataforma
+
+    // 6. Impacto de asteroides nas caixas acopladas
     const exposedBoxes = this.ship.getExposedCargoBoundingBoxes();
     this.asteroids.asteroids.forEach(ast => {
       for (let bIdx = exposedBoxes.length - 1; bIdx >= 0; bIdx--) {
@@ -537,25 +575,44 @@ class MagmanApp {
       }
     });
 
-    // 7. Blocos arremessados
+    // 7. BLOCOS LANÇADOS (COM GUIA MAGNÉTICO EM DIREÇÃO À NAVE)
+    const shipCenterX = this.ship.x + (this.ship.width / 2);
+    const shipBottomY = this.ship.y + this.ship.height;
+
     for (let i = this.launchedRocks.length - 1; i >= 0; i--) {
       const rock = this.launchedRocks[i];
+
+      // ATRAÇÃO MAGNÉTICA ATIVA: Corrige a trajetória em direção à nave no ar
+      const targetRockX = shipCenterX - (rock.size / 2);
+      rock.x += (targetRockX - rock.x) * 0.22; // Corrige imediatamente qualquer desvio lateral
+
+      // Subida vertical
       rock.y += rock.vy;
 
+      // Colisão com asteroides
+      let destroyed = false;
       this.asteroids.asteroids.forEach(ast => {
+        if (destroyed) return;
         const dx = (rock.x + rock.size / 2) - ast.x;
         const dy = (rock.y + rock.size / 2) - ast.y;
-        if (Math.sqrt(dx * dx + dy * dy) < ast.radius + (rock.size / 2)) {
-          this.particles.shatterBlock(rock.x, rock.y, rock.type);
-          this.launchedRocks.splice(i, 1);
+        if (Math.hypot(dx, dy) < ast.radius + (rock.size / 2)) {
+          if (this.particles && typeof this.particles.shatterBlock === 'function') {
+            this.particles.shatterBlock(rock.x + rock.size / 2, rock.y + rock.size / 2, rock.type);
+          }
+          destroyed = true;
         }
       });
 
-      const shipBottomY = this.ship.y + this.ship.height;
+      if (destroyed) {
+        this.launchedRocks.splice(i, 1);
+        continue;
+      }
+
+      // ACOPLAMENTO NA FACE INFERIOR DA PLATAFORMA
       if (
-        rock.y <= shipBottomY + 12 &&
-        rock.x + rock.size >= this.ship.x &&
-        rock.x <= this.ship.x + this.ship.width
+        rock.y <= shipBottomY + 16 &&
+        rock.x + rock.size >= this.ship.x - 30 &&
+        rock.x <= this.ship.x + this.ship.width + 30
       ) {
         this.launchedRocks.splice(i, 1);
         const added = this.ship.addCargo(rock.type);
@@ -563,21 +620,32 @@ class MagmanApp {
           this.cargoCollected++;
           const cargoHud = document.getElementById('hud-cargo');
           if (cargoHud) cargoHud.innerText = `${this.cargoCollected}/${this.activePlanet.targetCargo}`;
+
+          // Faíscas azuis de acoplamento com sucesso
+          if (this.particles && typeof this.particles.emit === 'function') {
+            this.particles.emit(shipCenterX, shipBottomY + 8, '#38bdf8', 16, 3.5);
+          }
+
           if (this.cargoCollected >= this.activePlanet.targetCargo) {
             this.triggerVictory();
           }
         }
+        continue;
+      }
+
+      // Descarta blocos que porventura passem do topo
+      if (rock.y < -100) {
+        this.launchedRocks.splice(i, 1);
       }
     }
 
-    // Magnetômetro
     const altitude = Math.max(0, 1 - (this.magman.y / this.viewport.height));
     const gauge = document.getElementById('mag-gauge');
     if (gauge) gauge.style.height = `${altitude * 100}%`;
   }
 
   updateTimerBarUI() {
-    const total = CONFIG.MISSION_TIME_SECONDS || 600;
+    const total = CONFIG.MISSION_TIME_SECONDS || 240;
     const pct = Math.max(0, (this.missionTimeRemaining / total) * 100);
     const fill = document.getElementById('mission-timer-fill');
     if (fill) fill.style.width = `${pct}%`;
@@ -598,16 +666,34 @@ class MagmanApp {
     this.parallax.render(ctx, this.camera.x, this.viewport.width, this.viewport.height);
     this.terrain.render(ctx, this.camera.x, this.viewport.width);
     this.ship.render(ctx, this.camera.x);
-    this.asteroids.render(ctx, this.camera.x);
+    this.asteroids.render(ctx, this.camera.x, this.viewport.width);
     this.crabs.render(ctx, this.camera.x);
     this.particles.render(ctx, this.camera.x);
 
+    // RENDERIZAÇÃO DOS BLOCOS LANÇADOS COM FEIXE TRATOR MAGNÉTICO
+    const shipScreenCenterX = (this.ship.x + (this.ship.width / 2)) - this.camera.x;
+    const shipBottomY = this.ship.y + this.ship.height;
+
     this.launchedRocks.forEach(r => {
+      const rx = r.x - this.camera.x;
+
+      // 1. Feixe Trator Magnético emitido pela nave capturando o bloco
+      ctx.save();
+      ctx.strokeStyle = "rgba(56, 189, 248, 0.45)";
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(shipScreenCenterX, shipBottomY);
+      ctx.lineTo(rx + r.size / 2, r.y);
+      ctx.stroke();
+      ctx.restore();
+
+      // 2. Bloco mineral
       ctx.fillStyle = r.type === 'FERRO' ? '#b91c1c' : (r.type === 'PARA' ? '#047857' : '#d97706');
-      ctx.fillRect(r.x - this.camera.x, r.y, r.size, r.size);
+      ctx.fillRect(rx, r.y, r.size, r.size);
       ctx.strokeStyle = "#ffffff";
       ctx.lineWidth = 1.5;
-      ctx.strokeRect(r.x - this.camera.x, r.y, r.size, r.size);
+      ctx.strokeRect(rx, r.y, r.size, r.size);
     });
 
     this.magman.render(ctx, this.camera.x);

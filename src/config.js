@@ -7,11 +7,11 @@ export const CONFIG = {
   GRAVITY: 0.38,
   BLOCK_SIZE: 36,               // Tamanho unificado dos blocos (36x36 px)
   ASTEROID_BELT_Y: 200,         // Altitude segura no corredor superior
-  ASTEROID_BASE_SPEED: 1.2,     // Velocidade cadenciada
-  ASTEROID_COUNT: 18,
+  ASTEROID_BASE_SPEED: 3.4,     // Velocidade cadenciada
+  ASTEROID_COUNT: 7,
   MAGNETIC_PULL_BASE: 0.38,
   LAUNCH_IMPULSE_VY: -12.0,     // Impulso de arremesso vertical
-  MISSION_TIME_LIMIT: 600,      // 10 minutos (600 segundos)
+  MISSION_TIME_LIMIT: 240,      // 4 minutos (240 segundos)
   TARGET_CARGO: 10              // Apenas 10 blocos para finalizar a missão
 };
 

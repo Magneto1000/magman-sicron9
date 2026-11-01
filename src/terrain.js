@@ -138,6 +138,18 @@ export class Terrain {
     return this.groundStartY + (this.rows * this.blockSize) + 14;
   }
 
+// Adicione ou certifique-se de que este método existe dentro da classe Terrain em src/terrain.js:
+  resize(newCanvasHeight) {
+    const dy = newCanvasHeight - this.canvasHeight;
+    this.canvasHeight = newCanvasHeight;
+    this.groundStartY = this.canvasHeight - (this.rows * this.blockSize) - 24;
+
+    // Atualiza a coordenada vertical de todos os blocos já gerados
+    this.chunks.forEach(b => {
+      b.y += dy;
+    });
+  }
+
   render(ctx, cameraX, viewportWidth) {
     const coreY = this.getCoreThresholdY();
 

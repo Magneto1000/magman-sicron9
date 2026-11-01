@@ -204,7 +204,7 @@
           <li><strong>Salto Magnético:</strong> Use <strong>INVERTER</strong> para alternar as polaridades. Polaridade oposta ao solo faz saltar; igual fixa e permite minerar.</li>
           <li><strong>Mineração:</strong> Pressione <strong>PEGAR</strong> para extrair um bloco do chão ou das paredes. Pressione <strong>JOGAR</strong> para lançá-lo na plataforma orbital.</li>
           <li><strong>Caranguejos Espaciais:</strong> Criaturas hostis caçam você. Prenda-os em fossas escavadas! Se acumularem até a borda, eles escaparão.</li>
-          <li><strong>Tempo Limite:</strong> Abasteça os 10 blocos antes dos 10 minutos se esgotarem.</li>
+          <li><strong>Tempo Limite:</strong> Abasteça os 10 blocos antes dos 4 minutos se esgotarem.</li>
         </ul>
         <button id="btn-start-game-confirmed" class="btn-retro btn-primary" style="margin-top: 10px;">ENTENDIDO, POUSAR AGORA</button>
       </div>
@@ -225,15 +225,44 @@
       </div>
 
       <!-- Dock Inferior: Botões Touch e Barra de Tempo -->
+    <!-- Dock Inferior: Vidas (Ímãs Ferradura), Botões Touch e Barra de Tempo -->
       <div class="gameplay-bottom-dock">
-        <div class="touch-action-row">
-          <button class="t-btn t-btn-polarity" id="ctrl-polarity">INVERTER</button>
-          <button class="t-btn t-btn-action" id="ctrl-action">PEGAR</button>
+        <div class="dock-controls-row">
+          <!-- Vidas no Canto Inferior Esquerdo -->
+          <div class="lives-container" id="lives-container" title="Integridade Magnética">
+            <div class="life-magnet-slot" id="life-1">
+              <svg viewBox="0 0 24 24" class="life-magnet-icon">
+                <path d="M 4 11 A 8 8 0 0 0 20 11 V 8 H 15 V 11 A 3 3 0 0 1 9 11 V 8 H 4 Z" fill="#64748b" stroke="#334155" stroke-width="1"/>
+                <rect x="4" y="3" width="5" height="5" fill="#ef4444" rx="1"/>
+                <rect x="15" y="3" width="5" height="5" fill="#0284c7" rx="1"/>
+              </svg>
+            </div>
+            <div class="life-magnet-slot" id="life-2">
+              <svg viewBox="0 0 24 24" class="life-magnet-icon">
+                <path d="M 4 11 A 8 8 0 0 0 20 11 V 8 H 15 V 11 A 3 3 0 0 1 9 11 V 8 H 4 Z" fill="#64748b" stroke="#334155" stroke-width="1"/>
+                <rect x="4" y="3" width="5" height="5" fill="#ef4444" rx="1"/>
+                <rect x="15" y="3" width="5" height="5" fill="#0284c7" rx="1"/>
+              </svg>
+            </div>
+            <div class="life-magnet-slot" id="life-3">
+              <svg viewBox="0 0 24 24" class="life-magnet-icon">
+                <path d="M 4 11 A 8 8 0 0 0 20 11 V 8 H 15 V 11 A 3 3 0 0 1 9 11 V 8 H 4 Z" fill="#64748b" stroke="#334155" stroke-width="1"/>
+                <rect x="4" y="3" width="5" height="5" fill="#ef4444" rx="1"/>
+                <rect x="15" y="3" width="5" height="5" fill="#0284c7" rx="1"/>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Botões de Ação no Canto Inferior Direito -->
+          <div class="touch-action-row">
+            <button class="t-btn t-btn-polarity" id="ctrl-polarity">INVERTER</button>
+            <button class="t-btn t-btn-action" id="ctrl-action">PEGAR</button>
+          </div>
         </div>
 
         <div class="mission-timer-container">
           <div class="mission-timer-bar" id="mission-timer-fill"></div>
-          <span class="mission-timer-text" id="mission-timer-label">TEMPO: 10:00</span>
+          <span class="mission-timer-text" id="mission-timer-label">TEMPO: 04:00</span>
         </div>
       </div>
     </section>

@@ -13,7 +13,7 @@ export class CrabManager {
 
   updateTimer(deltaTimeSeconds) {
     this.spawnTimer += deltaTimeSeconds;
-    if (this.spawnTimer >= 60) {
+    if (this.spawnTimer >= 30) {
       this.spawnTimer = 0;
       this.accumulatedSpawnCount += 2;
     }
@@ -28,13 +28,14 @@ export class CrabManager {
     this.crabs.push(new SpaceCrab(rightX, groundY - 45, -1, colors[Math.floor(Math.random() * colors.length)]));
   }
 
-  update(magman, terrain, onMagmanCaught) {
+update(magman, terrain, onMagmanCaught) {
     for (let i = 0; i < this.crabs.length; i++) {
       const crab = this.crabs[i];
       crab.update(magman, terrain, this.crabs);
 
-      if (!crab.isStuckDeep && this.checkCollision(crab, magman)) {
-        onMagmanCaught("Você foi eliminado por um caranguejo espacial alienígena!");
+      // Colide apenas se não estiver soterrado e se Magman não estiver imune
+      if (!crab.isStuckDeep && !magman.isInvulnerable && this.checkCollision(crab, magman)) {
+        onMagmanCaught("Você foi ferido por um caranguejo alienígena de Sicron!");
         return;
       }
     }

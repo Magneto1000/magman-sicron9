@@ -1,25 +1,46 @@
+/**
+ * SISTEMA DE PARTÍCULAS (FAÍSCAS DE IMPACTO E QUEBRA DE BLOCOS)
+ * Arquivo: src/particles.js
+ */
+
 export class ParticleSystem {
   constructor() {
     this.particles = [];
   }
 
-  // Pulveriza a rocha quando atingida por asteroides
-  shatterBlock(x, y, mineralType) {
-    const baseColor = mineralType === 'FERRO' ? '#ef4444' : (mineralType === 'PARA' ? '#10b981' : '#f59e0b');
-    const particleCount = 35;
-
-    for (let i = 0; i < particleCount; i++) {
+  // Método genérico para faíscas de dano e colisões
+  emit(x, y, color = '#ef4444', count = 12, speed = 4) {
+    for (let i = 0; i < count; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const speed = 2 + Math.random() * 6;
+      const spd = (Math.random() * 0.7 + 0.3) * speed;
       this.particles.push({
         x: x,
         y: y,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        size: 2 + Math.random() * 4,
-        color: baseColor,
+        vx: Math.cos(angle) * spd,
+        vy: Math.sin(angle) * spd - 1.5,
+        color: color,
+        size: Math.random() * 3 + 2,
         life: 1.0,
-        decay: 0.02 + Math.random() * 0.03
+        decay: Math.random() * 0.03 + 0.02
+      });
+    }
+  }
+
+  // Fragmentos de desintegração de minerais
+  shatterBlock(x, y, mineralType) {
+    const color = mineralType === 'FERRO' ? '#ef4444' : (mineralType === 'PARA' ? '#10b981' : '#f59e0b');
+    for (let i = 0; i < 16; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const spd = Math.random() * 5 + 2;
+      this.particles.push({
+        x: x,
+        y: y,
+        vx: Math.cos(angle) * spd,
+        vy: Math.sin(angle) * spd - 2,
+        color: color,
+        size: Math.random() * 4 + 2,
+        life: 1.0,
+        decay: Math.random() * 0.025 + 0.02
       });
     }
   }
@@ -29,7 +50,7 @@ export class ParticleSystem {
       const p = this.particles[i];
       p.x += p.vx;
       p.y += p.vy;
-      p.vy += 0.12; // Leve peso dos fragmentos
+      p.vy += 0.18; // Gravidade leve nos estilhaços
       p.life -= p.decay;
 
       if (p.life <= 0) {
@@ -39,14 +60,17 @@ export class ParticleSystem {
   }
 
   render(ctx, cameraX) {
-    this.particles.forEach(p => {
-      ctx.save();
-      ctx.globalAlpha = p.life;
+    if (this.particles.length === 0) return;
+
+    ctx.save();
+    for (let i = 0; i < this.particles.length; i++) {
+      const p = this.particles[i];
+      const rx = p.x - cameraX;
+
+      ctx.globalAlpha = Math.max(0, p.life);
       ctx.fillStyle = p.color;
-      ctx.shadowColor = p.color;
-      ctx.shadowBlur = 6;
-      ctx.fillRect(p.x - cameraX, p.y, p.size, p.size);
-      ctx.restore();
-    });
+      ctx.fillRect(rx, p.y, p.size, p.size);
+    }
+    ctx.restore();
   }
 }

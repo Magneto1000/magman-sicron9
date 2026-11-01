@@ -592,3 +592,259 @@ html, body {
   color: #94a3b8;
   line-height: 1.5;
 }
+
+/* LINHA DE CONTROLES INFERIORES: VIDAS À ESQUERDA, BOTÕES À DIREITA */
+.dock-controls-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  width: 100%;
+  pointer-events: auto;
+}
+
+/* CONTAINER DAS VIDAS (CANTO INFERIOR ESQUERDO) */
+.lives-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 6px 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+}
+
+.life-magnet-slot {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  filter: drop-shadow(0 0 4px rgba(56, 189, 248, 0.4));
+}
+
+.life-magnet-icon {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* Vida perdida: fica cinza, opaca e menor */
+.life-magnet-slot.lost {
+  opacity: 0.18;
+  filter: grayscale(100%);
+  transform: scale(0.8);
+}
+
+@media (orientation: landscape) and (max-height: 600px), (max-height: 480px) {
+  .lives-container {
+    padding: 3px 6px;
+    gap: 4px;
+  }
+  .life-magnet-slot {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+/* Modo responsivo */
+@media (orientation: landscape) and (max-height: 600px), (max-height: 480px) {
+  /* Libera o Canvas para preencher toda a largura da tela em modo paisagem */
+  #game-app {
+    max-width: 100vw;
+    width: 100vw;
+    border: none;
+    border-radius: 0;
+  }
+
+  .side-band {
+    width: 8px;
+  }
+
+  /* TELA DE AUTENTICAÇÃO: Layout horizontal em duas colunas */
+  .auth-modal {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    max-width: 580px;
+    width: 95%;
+    gap: 20px;
+    padding: 12px 18px;
+  }
+
+  .avatar-hero-container {
+    width: 85px !important;
+    height: 95px !important;
+    margin-bottom: 0 !important;
+  }
+
+  .game-logo {
+    font-size: 18px;
+    letter-spacing: 2px;
+  }
+
+  .tagline {
+    font-size: 8px;
+    margin-bottom: 0;
+  }
+
+  #auth-form {
+    flex: 1;
+    gap: 4px;
+  }
+
+  #auth-form input[type="text"],
+  #auth-form input[type="password"] {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+
+  #auth-form label {
+    font-size: 9px;
+  }
+
+  .auth-btn-group {
+    margin-top: 4px;
+  }
+
+  .auth-btn-group .btn-retro {
+    padding: 8px;
+    font-size: 10px;
+  }
+
+  /* SELEÇÃO DE PLANETAS: Grade com múltiplas colunas */
+  #screen-planets {
+    padding: 8px 16px;
+  }
+
+  .planets-header {
+    padding: 4px 10px;
+    margin-bottom: 6px;
+  }
+
+  .dialog-card {
+    padding: 6px 10px;
+    font-size: 10px;
+    margin-bottom: 6px;
+  }
+
+  .planet-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 6px;
+  }
+
+  .planet-card {
+    padding: 6px 8px;
+  }
+
+  .planet-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  /* BRIEFING TÁTICO */
+  #screen-briefing {
+    padding: 8px 16px;
+  }
+
+  .briefing-hud {
+    max-height: 68vh;
+    padding: 8px 12px;
+    gap: 6px;
+  }
+
+  .briefing-header h2 {
+    font-size: 15px;
+  }
+
+  .planet-data-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+  }
+
+  .briefing-actions {
+    flex-direction: row;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .briefing-actions .btn-retro {
+    max-width: 200px;
+    padding: 8px 12px;
+    font-size: 11px;
+  }
+
+  /* GAMEPLAY: HUD E CONTROLES COMPACTADOS */
+  .hud-bar {
+    top: 6px;
+    left: 12px;
+    right: 12px;
+    font-size: 10px;
+  }
+
+  .mag-gauge-container {
+    top: 32px;
+    bottom: 50px;
+    right: 8px;
+    width: 10px;
+  }
+
+  .gameplay-bottom-dock {
+    bottom: 6px;
+    left: 12px;
+    right: 12px;
+    gap: 4px;
+  }
+
+  .touch-action-row {
+    gap: 8px;
+  }
+
+  .t-btn {
+    height: 38px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  }
+
+  .t-btn-polarity,
+  .t-btn-action {
+    width: 76px;
+    font-size: 10px;
+  }
+
+  .mission-timer-container {
+    height: 14px;
+  }
+
+  .mission-timer-text {
+    font-size: 8px;
+  }
+
+  /* MODAIS TÁTICOS EM LANDSCAPE */
+  .modal-body {
+    max-width: 500px;
+    max-height: 94vh;
+    padding: 10px 14px;
+    gap: 6px;
+  }
+
+  .tips-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    font-size: 10px;
+    padding-left: 12px;
+  }
+
+  .gameover-title, .victory-title {
+    font-size: 16px;
+  }
+
+  .modal-telemetry {
+    font-size: 9px;
+    padding: 6px;
+  }
+}

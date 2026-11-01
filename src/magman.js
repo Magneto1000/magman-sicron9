@@ -1,5 +1,5 @@
 /**
- * AVATAR MAGMAN COM LUVAS PRETAS E COLISÕES RESILIENTES
+ * AVATAR MAGMAN COM 3 VIDAS E LUVAS PRETAS
  * Arquivo: src/magman.js
  */
 import { CONFIG } from './config.js';
@@ -18,6 +18,10 @@ export class Magman {
     this.polarityLower = 'S';
     this.polarityUpper = 'N';
     this.carryingRock = null;
+
+    // Sistema de Vidas
+    this.lives = 3;
+    this.invulnerableTimer = 0; // Temporizador de invulnerabilidade pós-dano
   }
 
   togglePolarity() {
@@ -25,7 +29,24 @@ export class Magman {
     this.polarityUpper = this.polarityLower === 'S' ? 'N' : 'S';
   }
 
-  update(moveDirection, terrain) {
+  takeDamage() {
+    if (this.invulnerableTimer > 0) return false;
+
+    this.lives--;
+    this.invulnerableTimer = 1.8; // 1.8 segundos invulnerável
+    this.vy = -6.5;               // Pequeno impulso vertical de recuo
+    return true;
+  }
+
+  get isInvulnerable() {
+    return this.invulnerableTimer > 0;
+  }
+
+  update(moveDirection, terrain, deltaSec = 0.016) {
+    if (this.invulnerableTimer > 0) {
+      this.invulnerableTimer = Math.max(0, this.invulnerableTimer - deltaSec);
+    }
+
     if (moveDirection < 0) {
       this.vx = -this.speed;
       this.facing = 'left';
@@ -45,7 +66,6 @@ export class Magman {
 
     this.resolveVerticalCollisions(terrain);
 
-    // Ajusta o bloco carregado sobre o capacete
     if (this.carryingRock && !this.carryingRock.isLaunched) {
       const bSize = CONFIG.BLOCK_SIZE || 36;
       this.carryingRock.size = bSize;
@@ -72,10 +92,6 @@ export class Magman {
 
     if (typeof terrain.forEachActiveBlockNear === 'function') {
       terrain.forEachActiveBlockNear(this.x, this.y, checkBlock);
-    } else if (terrain.chunks && typeof terrain.chunks.forEach === 'function') {
-      terrain.chunks.forEach(checkBlock);
-    } else if (Array.isArray(terrain.blocks)) {
-      terrain.blocks.forEach(checkBlock);
     }
   }
 
@@ -91,7 +107,6 @@ export class Magman {
         this.y + this.height <= b.y + 18 &&
         this.vy >= 0
       ) {
-        // Polaridades opostas repelem com a força nativa da rocha
         if (this.polarityLower !== b.polarityTop) {
           this.vy = -(Number(b.repulseForce) || 8.2);
         } else {
@@ -104,20 +119,22 @@ export class Magman {
 
     if (typeof terrain.forEachActiveBlockNear === 'function') {
       terrain.forEachActiveBlockNear(this.x, this.y, checkBlock);
-    } else if (terrain.chunks && typeof terrain.chunks.forEach === 'function') {
-      terrain.chunks.forEach(checkBlock);
-    } else if (Array.isArray(terrain.blocks)) {
-      terrain.blocks.forEach(checkBlock);
     }
   }
 
   render(ctx, cameraX) {
+    // Efeito de piscar quando atingido
+    if (this.invulnerableTimer > 0) {
+      const blink = Math.floor(this.invulnerableTimer * 12) % 2 === 0;
+      if (blink) return;
+    }
+
     const rx = this.x - cameraX;
     const ry = this.y;
 
     ctx.save();
 
-    // 1. Rocha Carregada (36px)
+    // Rocha Carregada
     if (this.carryingRock && !this.carryingRock.isLaunched) {
       const rock = this.carryingRock;
       const rockX = rock.x - cameraX;
@@ -131,21 +148,21 @@ export class Magman {
       ctx.fillRect(rockX + (rock.size / 2) - 6, rock.y + 3, 12, 4);
     }
 
-    // 2. Mochila Eletromagnética Traseira
+    // Mochila
     ctx.fillStyle = "#1e293b";
     ctx.fillRect(rx - 3, ry + 12, this.width + 6, 26);
 
-    // 3. Membros Inferiores (Polo Sul / Azul ou Norte / Vermelho)
+    // Membros Inferiores
     ctx.fillStyle = this.polarityLower === 'S' ? '#0284c7' : '#ef4444';
     ctx.fillRect(rx + 3, ry + 30, 9, 24);
     ctx.fillRect(rx + 18, ry + 30, 9, 24);
 
-    // Botas Pretas Reforçadas
+    // Botas Pretas
     ctx.fillStyle = "#0f172a";
     ctx.fillRect(rx + 1, ry + 48, 12, 6);
     ctx.fillRect(rx + 17, ry + 48, 12, 6);
 
-    // 4. Tronco Superior
+    // Tronco Superior
     ctx.fillStyle = this.polarityUpper === 'S' ? '#0284c7' : '#ef4444';
     ctx.fillRect(rx + 4, ry + 14, 22, 16);
 
@@ -153,12 +170,12 @@ export class Magman {
     ctx.fillRect(rx - 3, ry - 4, 7, 20);
     ctx.fillRect(rx + this.width - 4, ry - 4, 7, 20);
 
-    // Luvas Pretas Táticas
+    // Luvas Pretas
     ctx.fillStyle = "#0f172a";
     ctx.fillRect(rx - 4, ry - 8, 8, 6);
     ctx.fillRect(rx + this.width - 4, ry - 8, 8, 6);
 
-    // 5. Capacete e Visor Panorâmico
+    // Capacete e Visor
     ctx.fillStyle = "#0f172a";
     ctx.fillRect(rx + 5, ry, 20, 14);
 
