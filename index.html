@@ -5,24 +5,125 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>MAGMAN: Sicron 9</title>
   <link rel="stylesheet" href="style.css">
+  <style>
+    /* Estilos e animação para o novo Magman na tela de login */
+    .avatar-hero-container {
+      width: 140px;
+      height: 160px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      filter: drop-shadow(0 0 16px rgba(56, 189, 248, 0.45));
+      animation: floatAvatar 3.2s ease-in-out infinite;
+    }
+
+    @keyframes floatAvatar {
+      0%, 100% {
+        transform: translateY(0px);
+      }
+      50% {
+        transform: translateY(-8px);
+      }
+    }
+
+    .magman-svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+  </style>
 </head>
 <body>
   <div id="game-app">
-    <!-- Tela 1: Login / Cadastro -->
+    <!-- Tela 1: Login / Cadastro Obrigatório -->
     <section id="screen-auth" class="view-panel active">
       <div class="side-band band-blue"></div>
       <div class="side-band band-red"></div>
+      
       <div class="auth-modal">
-        <canvas id="auth-avatar-preview" width="90" height="110"></canvas>
+        <!-- Avatar Vetorial de Alta Definição do Magman -->
+        <div class="avatar-hero-container">
+          <svg class="magman-svg" viewBox="0 0 140 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Linhas de Campo Magnético em Arco (Norte -> Sul) -->
+            <path d="M 30 75 C 10 50, 10 110, 32 125" stroke="rgba(56, 189, 248, 0.55)" stroke-width="2" stroke-dasharray="3 3" />
+            <path d="M 110 75 C 130 50, 130 110, 108 125" stroke="rgba(239, 68, 68, 0.55)" stroke-width="2" stroke-dasharray="3 3" />
+
+            <!-- Mochila de Suporte de Vida / Capacitor -->
+            <rect x="42" y="44" width="56" height="52" rx="10" fill="#0f172a" stroke="#334155" stroke-width="2"/>
+            <rect x="48" y="38" width="12" height="8" rx="2" fill="#64748b"/>
+            <rect x="80" y="38" width="12" height="8" rx="2" fill="#64748b"/>
+            <!-- Antena de Comunicação -->
+            <line x1="86" y1="38" x2="86" y2="24" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="86" cy="22" r="3" fill="#38bdf8"/>
+
+            <!-- Pernas / Polo Sul (Azul Cobalto) -->
+            <rect x="48" y="94" width="18" height="36" rx="6" fill="#0284c7" stroke="#0369a1" stroke-width="2"/>
+            <rect x="74" y="94" width="18" height="36" rx="6" fill="#0284c7" stroke="#0369a1" stroke-width="2"/>
+            <!-- Joelheiras Reforçadas -->
+            <rect x="47" y="106" width="20" height="8" rx="3" fill="#0f172a" opacity="0.6"/>
+            <rect x="73" y="106" width="20" height="8" rx="3" fill="#0f172a" opacity="0.6"/>
+
+            <!-- Botas Magnéticas Pretas com Solado Repulsor -->
+            <path d="M 44 130 L 68 130 L 68 142 L 40 142 Q 40 134 44 130 Z" fill="#090d16" stroke="#1e293b" stroke-width="2"/>
+            <rect x="42" y="140" width="26" height="3" fill="#38bdf8"/>
+            <path d="M 72 130 L 96 130 L 100 134 Q 100 142 96 142 L 72 142 Z" fill="#090d16" stroke="#1e293b" stroke-width="2"/>
+            <rect x="72" y="140" width="26" height="3" fill="#38bdf8"/>
+
+            <!-- Tronco / Polo Norte (Vermelho Carmesim) -->
+            <rect x="44" y="52" width="52" height="46" rx="10" fill="#dc2626" stroke="#991b1b" stroke-width="2"/>
+            <!-- Placas de Armadura Torácica -->
+            <path d="M 48 56 L 92 56 L 86 78 L 54 78 Z" fill="#ef4444" opacity="0.85"/>
+            <!-- Reator Arc Magnético Central -->
+            <circle cx="70" cy="70" r="9" fill="#0f172a" stroke="#38bdf8" stroke-width="2.5"/>
+            <circle cx="70" cy="70" r="5" fill="#38bdf8"/>
+            <circle cx="68" cy="68" r="2" fill="#ffffff"/>
+
+            <!-- Cinto Magnético Central de Transição -->
+            <rect x="42" y="90" width="56" height="7" rx="3" fill="#1e293b" stroke="#475569" stroke-width="1.5"/>
+            <rect x="64" y="89" width="12" height="9" rx="2" fill="#f59e0b"/>
+
+            <!-- Braço Esquerdo -->
+            <rect x="28" y="56" width="16" height="28" rx="7" fill="#dc2626" stroke="#991b1b" stroke-width="1.5"/>
+            <!-- Luva Preta Tática Esquerda -->
+            <rect x="26" y="80" width="18" height="15" rx="5" fill="#090d16" stroke="#334155" stroke-width="1.5"/>
+            <circle cx="35" cy="88" r="2.5" fill="#38bdf8"/> <!-- Emissor de pulso -->
+
+            <!-- Braço Direito -->
+            <rect x="96" y="56" width="16" height="28" rx="7" fill="#dc2626" stroke="#991b1b" stroke-width="1.5"/>
+            <!-- Luva Preta Tática Direita -->
+            <rect x="96" y="80" width="18" height="15" rx="5" fill="#090d16" stroke="#334155" stroke-width="1.5"/>
+            <circle cx="105" cy="88" r="2.5" fill="#38bdf8"/> <!-- Emissor de pulso -->
+
+            <!-- Capacete / Cabeça -->
+            <rect x="44" y="16" width="52" height="40" rx="16" fill="#0f172a" stroke="#334155" stroke-width="2.5"/>
+            <!-- Visor Panorâmico Ciano Escuro com Brilho de Vidro -->
+            <rect x="50" y="24" width="40" height="20" rx="8" fill="#0284c7"/>
+            <path d="M 54 28 Q 70 24 86 28" stroke="#38bdf8" stroke-width="3" stroke-linecap="round"/>
+            <ellipse cx="60" cy="30" rx="4" ry="2" fill="#ffffff" opacity="0.8"/>
+
+            <!-- Emblemas de Polaridade nos Ombros -->
+            <circle cx="36" cy="62" r="4" fill="#ef4444"/>
+            <text x="34" y="65" font-size="6" font-family="monospace" font-weight="900" fill="#ffffff">N</text>
+            <circle cx="104" cy="62" r="4" fill="#0284c7"/>
+            <text x="102" y="65" font-size="6" font-family="monospace" font-weight="900" fill="#ffffff">S</text>
+          </svg>
+        </div>
+
         <h1 class="game-logo">MAGMAN</h1>
         <p class="tagline">SISTEMA SICRON 9</p>
 
         <form id="auth-form" onsubmit="event.preventDefault();">
-          <label for="input-email">E-MAIL OU PILOTO:</label>
-          <input type="text" id="input-email" value="astronauta@sicron.org" placeholder="astronauta@sicron.org" autocomplete="off" />
+          <label for="input-email">PILOTO / E-MAIL:</label>
+          <input type="text" id="input-email" required placeholder="piloto@sicron.org" autocomplete="off" />
 
           <label for="input-password">CÓDIGO DE ACESSO:</label>
-          <input type="password" id="input-password" value="123456" placeholder="••••••••" autocomplete="off" />
+          <input type="password" id="input-password" required placeholder="••••••••" autocomplete="off" />
+
+          <div class="auth-remember-row">
+            <input type="checkbox" id="auth-remember" checked />
+            <label for="auth-remember">Manter conectado neste dispositivo</label>
+          </div>
 
           <div class="auth-btn-group">
             <button type="button" id="btn-login" class="btn-retro btn-primary">ENTRAR</button>
@@ -32,14 +133,24 @@
       </div>
     </section>
 
-    <!-- Tela 2: Seleção de Planetas -->
+    <!-- Tela 2: Seleção de Planetas (50 Planetas) & Perfil do Piloto -->
     <section id="screen-planets" class="view-panel">
+      <header class="planets-header">
+        <div class="user-badge">
+          <span class="user-name" id="user-display-name">Piloto</span>
+          <span class="user-conquered" id="user-conquered-count">0/50 Planetas</span>
+        </div>
+        <button id="btn-logout" class="btn-mini-danger">SAIR</button>
+      </header>
+
       <div class="dialog-card">
-        Explore os corpos celestes de Sicron 9. Minere minérios magnéticos para abastecer a plataforma cargueira.
+        Explore os 50 mundos do Sistema Sicron 9. Cada pedra possui campo magnético próprio. Conquiste todos para salvar a Federação.
       </div>
+
       <div id="planet-matrix" class="planet-list"></div>
-      <div style="margin-top: 12px; display: flex; justify-content: center;">
-        <button id="btn-view-ranking" class="btn-retro btn-secondary">RANKING GLOBAL</button>
+
+      <div style="margin-top: 8px; display: flex; justify-content: center;">
+        <button id="btn-view-ranking" class="btn-retro btn-secondary">RANKING DA FEDERAÇÃO</button>
       </div>
     </section>
 
@@ -47,7 +158,7 @@
     <section id="screen-briefing" class="view-panel">
       <div class="briefing-hud">
         <div class="briefing-header">
-          <span style="font-size: 10px; color: var(--accent-neon); letter-spacing: 2px;">VARREDURA ORBITAL</span>
+          <span style="font-size: 10px; color: var(--accent-neon); letter-spacing: 2px;">TELEMETRIA ORBITAL</span>
           <h2 id="briefing-planet-title">PLANETA</h2>
         </div>
 
@@ -79,15 +190,30 @@
       </div>
 
       <div class="briefing-actions">
-        <button id="btn-launch" class="btn-retro btn-primary">INICIAR POUSO</button>
+        <button id="btn-open-tips" class="btn-retro btn-primary">INICIAR POUSO</button>
         <button id="btn-cancel-briefing" class="btn-retro btn-secondary">RETORNAR</button>
       </div>
     </section>
 
+    <!-- Modal: Dicas Táticas Pré-Missão -->
+    <div id="modal-tips" class="modal-overlay hidden">
+      <div class="modal-body tips-box">
+        <h3 style="color: var(--accent-neon); letter-spacing: 1px;">MANUAL DE OPERAÇÕES SICRON</h3>
+        <ul class="tips-list">
+          <li><strong>Movimento:</strong> Toque ou segure à <em>esquerda</em> ou <em>direita</em> do Magman para correr pelo terreno infinito.</li>
+          <li><strong>Salto Magnético:</strong> Use <strong>INVERTER</strong> para alternar as polaridades. Polaridade oposta ao solo faz saltar; igual fixa e permite minerar.</li>
+          <li><strong>Mineração:</strong> Pressione <strong>PEGAR</strong> para extrair um bloco do chão ou das paredes. Pressione <strong>JOGAR</strong> para lançá-lo na plataforma orbital.</li>
+          <li><strong>Caranguejos Espaciais:</strong> Criaturas hostis caçam você. Prenda-os em fossas escavadas! Se acumularem até a borda, eles escaparão.</li>
+          <li><strong>Tempo Limite:</strong> Abasteça os 10 blocos antes dos 10 minutos se esgotarem.</li>
+        </ul>
+        <button id="btn-start-game-confirmed" class="btn-retro btn-primary" style="margin-top: 10px;">ENTENDIDO, POUSAR AGORA</button>
+      </div>
+    </div>
+
     <!-- Tela 4: Gameplay Canvas -->
     <section id="screen-gameplay" class="view-panel">
       <div class="hud-bar">
-        <div class="hud-item">CARGA ACOPLADA: <span id="hud-cargo" style="color: #38bdf8;">0/20</span></div>
+        <div class="hud-item">CARGA: <span id="hud-cargo" style="color: #38bdf8;">0/10</span></div>
         <div class="hud-item">POLARIDADE: <span id="hud-polarity" style="color: #38bdf8;">SUL/NORTE</span></div>
       </div>
 
@@ -98,14 +224,16 @@
         <span class="mag-label">MAG</span>
       </div>
 
-      <div class="touch-controls">
-        <div class="cluster-left">
-          <button class="t-btn" id="ctrl-left">◄</button>
-          <button class="t-btn" id="ctrl-right">►</button>
+      <!-- Dock Inferior: Botões Touch e Barra de Tempo -->
+      <div class="gameplay-bottom-dock">
+        <div class="touch-action-row">
+          <button class="t-btn t-btn-polarity" id="ctrl-polarity">INVERTER</button>
+          <button class="t-btn t-btn-action" id="ctrl-action">PEGAR</button>
         </div>
-        <div class="cluster-right">
-          <button class="t-btn t-btn-alt" id="ctrl-polarity">POLARIDADE</button>
-          <button class="t-btn t-btn-action" id="ctrl-action">AÇÃO</button>
+
+        <div class="mission-timer-container">
+          <div class="mission-timer-bar" id="mission-timer-fill"></div>
+          <span class="mission-timer-text" id="mission-timer-label">TEMPO: 10:00</span>
         </div>
       </div>
     </section>
@@ -115,30 +243,39 @@
       <div class="modal-body gameover-box">
         <h2 class="gameover-title">ALERTA CRÍTICO</h2>
         <p id="gameover-reason" style="font-size: 12px; color: #fca5a5; line-height: 1.5;"></p>
-        <div class="modal-telemetry" id="gameover-stats">
-          Telemetria: Traje espacial comprometido.
-        </div>
+        <div class="modal-telemetry" id="gameover-stats">Telemetria: Traje espacial comprometido.</div>
         <button id="btn-gameover-retry" class="btn-retro btn-primary" style="margin-top: 6px;">TENTAR NOVAMENTE</button>
         <button id="btn-gameover-menu" class="btn-retro btn-secondary">MAPA DE PLANETAS</button>
       </div>
     </div>
 
-    <!-- Modal: Vitória -->
+    <!-- Modal: Vitória de Missão -->
     <div id="modal-victory" class="modal-overlay hidden">
       <div class="modal-body victory-box">
         <h2 class="victory-title">MISSÃO CUMPRIDA</h2>
         <p style="font-size: 12px; color: #86efac; line-height: 1.4;">
-          A plataforma cargueira completou a sua quota de minérios com sucesso!
+          A cota de 10 blocos magnéticos foi acoplada à plataforma orbital antes do tempo limite!
         </p>
         <div class="modal-telemetry" id="victory-stats"></div>
-        <button id="btn-victory-continue" class="btn-retro btn-primary" style="margin-top: 6px;">MAPA DE PLANETAS</button>
+        <button id="btn-victory-continue" class="btn-retro btn-primary" style="margin-top: 6px;">PRÓXIMO PLANETA</button>
       </div>
     </div>
 
-    <!-- Modal: Ranking -->
+    <!-- Modal: Conquista Total dos 50 Planetas -->
+    <div id="modal-all-conquered" class="modal-overlay hidden">
+      <div class="modal-body victory-box" style="border-color: #facc15;">
+        <h2 style="color: #facc15; font-size: 22px; font-weight: 900;">HERÓI DE SICRON 9!</h2>
+        <p style="font-size: 12px; color: #fef08a; line-height: 1.5;">
+          Você explorou, sobreviveu e dominou todos os 50 planetas do sistema! Seu nome está gravado no topo da Federação.
+        </p>
+        <button id="btn-all-continue" class="btn-retro btn-primary" style="margin-top: 6px;">VER RANKING FINAL</button>
+      </div>
+    </div>
+
+    <!-- Modal: Ranking Global da Federação -->
     <div id="modal-ranking" class="modal-overlay hidden">
       <div class="modal-body">
-        <h3 style="color: var(--accent-neon); letter-spacing: 2px;">TOP PILOTOS DA FEDERAÇÃO</h3>
+        <h3 style="color: var(--accent-neon); letter-spacing: 2px;">RANKING DA FEDERAÇÃO</h3>
         <ul id="leaderboard-list" style="list-style: none; width: 100%; text-align: left; padding: 4px;"></ul>
         <button id="btn-close-ranking" class="btn-retro btn-secondary" style="margin-top: 8px;">FECHAR</button>
       </div>

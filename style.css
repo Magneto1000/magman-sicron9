@@ -1,6 +1,6 @@
 :root {
   --bg-deep: #030712;
-  --panel-bg: rgba(15, 23, 42, 0.92);
+  --panel-bg: rgba(15, 23, 42, 0.95);
   --panel-border: #38bdf8;
   --north-red: #ef4444;
   --south-blue: #0284c7;
@@ -22,22 +22,26 @@
 html, body {
   width: 100%;
   height: 100%;
+  height: 100dvh;
   background: #000;
   font-family: 'Courier New', Courier, monospace;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: #fff;
 }
 
 #game-app {
   width: 100vw;
   max-width: 440px;
-  height: 100vh;
-  max-height: 920px;
+  height: 100%;
+  height: 100dvh;
   background: var(--bg-deep);
   position: relative;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
   box-shadow: 0 0 50px rgba(0, 0, 0, 0.95);
   border: 1px solid #1e293b;
 }
@@ -47,22 +51,20 @@ html, body {
   inset: 0;
   display: none;
   flex-direction: column;
-  padding: 16px;
+  padding: 12px;
   z-index: 10;
+  overflow: hidden;
 }
 
 .view-panel.active {
   display: flex;
 }
 
-/* ==========================================================================
-   TELA DE CADASTRO E LOGIN
-   ========================================================================== */
 .side-band {
   position: absolute;
   bottom: 0;
-  width: 14px;
-  height: 70%;
+  width: 12px;
+  height: 65%;
   z-index: 1;
 }
 .band-blue { left: 0; background: var(--south-blue); box-shadow: 0 0 20px var(--south-blue); }
@@ -71,79 +73,135 @@ html, body {
 .auth-modal {
   margin: auto;
   background: var(--panel-bg);
-  backdrop-filter: blur(8px);
-  border-radius: 24px;
-  padding: 24px;
-  width: 90%;
+  border-radius: 20px;
+  padding: 20px;
+  width: 92%;
   display: flex;
   flex-direction: column;
   align-items: center;
   box-shadow: 0 10px 40px rgba(0,0,0,0.8);
   border: 2px solid #334155;
+  z-index: 2;
 }
 
 .game-logo {
-  font-size: 26px;
+  font-size: 24px;
   color: #fff;
-  letter-spacing: 5px;
+  letter-spacing: 4px;
   font-weight: 900;
   text-shadow: 0 0 12px var(--accent-neon);
 }
 
 .tagline {
-  font-size: 10px;
+  font-size: 9px;
   color: var(--text-muted);
   letter-spacing: 2px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 #auth-form {
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 #auth-form label {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: bold;
   color: #94a3b8;
 }
 
-#auth-form input {
+#auth-form input[type="text"],
+#auth-form input[type="password"] {
   background: #090d16;
   color: #fff;
   border: 1px solid #334155;
-  padding: 12px;
+  padding: 10px;
   border-radius: 8px;
   font-family: inherit;
-  font-size: 13px;
+  font-size: 12px;
+}
+
+.auth-remember-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0;
+}
+
+.auth-remember-row input[type="checkbox"] {
+  accent-color: var(--accent-neon);
+  width: 14px;
+  height: 14px;
+}
+
+.auth-remember-row label {
+  font-size: 10px !important;
+  color: #cbd5e1 !important;
+  cursor: pointer;
 }
 
 .auth-btn-group {
   display: flex;
-  gap: 10px;
-  margin-top: 10px;
+  gap: 8px;
+  margin-top: 6px;
 }
 
-/* ==========================================================================
-   SELEÇÃO DE PLANETAS
-   ========================================================================== */
+.planets-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+}
+
+.user-badge {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.user-name {
+  font-size: 12px;
+  font-weight: bold;
+  color: var(--accent-neon);
+}
+
+.user-conquered {
+  font-size: 10px;
+  color: #facc15;
+}
+
+.btn-mini-danger {
+  background: #7f1d1d;
+  color: #fff;
+  border: 1px solid #ef4444;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
 .dialog-card {
   background: rgba(15, 23, 42, 0.85);
   border-left: 4px solid var(--accent-neon);
   border-radius: 8px;
-  padding: 12px 16px;
+  padding: 10px 12px;
   color: #cbd5e1;
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1.4;
-  margin-bottom: 14px;
+  margin-bottom: 8px;
 }
 
 .planet-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   overflow-y: auto;
   flex: 1;
   padding-right: 4px;
@@ -152,11 +210,11 @@ html, body {
 .planet-card {
   background: rgba(15, 23, 42, 0.8);
   border: 1px solid #334155;
-  border-radius: 12px;
-  padding: 12px;
+  border-radius: 10px;
+  padding: 10px;
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -164,68 +222,61 @@ html, body {
 .planet-card:hover, .planet-card:active {
   border-color: var(--accent-neon);
   background: rgba(30, 41, 59, 0.9);
-  transform: translateX(4px);
 }
 
 .planet-card.completed {
   filter: grayscale(100%) opacity(40%);
-  pointer-events: none;
 }
 
 .planet-icon {
-  width: 50px;
-  height: 50px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   flex-shrink: 0;
-  box-shadow: inset -8px -8px 12px rgba(0,0,0,0.8), 0 0 10px rgba(255,255,255,0.1);
+  box-shadow: inset -6px -6px 10px rgba(0,0,0,0.8), 0 0 8px rgba(255,255,255,0.1);
 }
 
 .planet-info-block {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
 }
 
 .planet-info-block strong {
-  font-size: 13px;
+  font-size: 12px;
   color: #fff;
-  letter-spacing: 1px;
 }
 
 .planet-tag {
-  font-size: 10px;
+  font-size: 9px;
   color: var(--accent-neon);
 }
 
-/* ==========================================================================
-   TELA DE BRIEFING TÁTICO
-   ========================================================================== */
 #screen-briefing {
   background: radial-gradient(circle at top, #0f172a 0%, #030712 100%);
   justify-content: space-between;
-  padding: 20px 16px;
+  padding: 14px;
 }
 
 .briefing-hud {
   background: var(--panel-bg);
   border: 1px solid #334155;
-  border-radius: 16px;
-  padding: 18px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.7);
+  border-radius: 14px;
+  padding: 14px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   overflow-y: auto;
   max-height: 72vh;
 }
 
 .briefing-header {
   border-bottom: 1px dashed #475569;
-  padding-bottom: 10px;
+  padding-bottom: 6px;
 }
 
 .briefing-header h2 {
-  font-size: 20px;
+  font-size: 18px;
   color: #fff;
   letter-spacing: 2px;
   text-shadow: 0 0 10px var(--accent-neon);
@@ -234,27 +285,25 @@ html, body {
 .planet-data-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin: 6px 0;
+  gap: 8px;
 }
 
 .data-cell {
   background: rgba(0, 0, 0, 0.4);
   border: 1px solid #1e293b;
-  border-radius: 8px;
-  padding: 8px;
+  border-radius: 6px;
+  padding: 6px;
 }
 
 .data-label {
-  font-size: 9px;
+  font-size: 8px;
   color: #64748b;
   display: block;
-  margin-bottom: 2px;
   text-transform: uppercase;
 }
 
 .data-value {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: bold;
   color: #e2e8f0;
 }
@@ -262,47 +311,40 @@ html, body {
 .ship-tactical-card {
   background: rgba(2, 132, 199, 0.1);
   border: 1px solid var(--south-blue);
-  border-radius: 10px;
-  padding: 10px 12px;
+  border-radius: 8px;
+  padding: 8px 10px;
 }
 
 .ship-tactical-card h4 {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--accent-neon);
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .briefing-actions {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   width: 100%;
-  margin-top: 10px;
   align-items: center;
 }
 
-/* ==========================================================================
-   BOTÕES SCI-FI MODERNIZADOS
-   ========================================================================== */
 .btn-retro {
   background: #0f172a;
   color: #fff;
   width: 100%;
   max-width: 320px;
-  padding: 14px 20px;
+  padding: 12px 16px;
   border: 1px solid #475569;
-  border-radius: 12px;
-  font-size: 13px;
+  border-radius: 10px;
+  font-size: 12px;
   font-weight: bold;
   cursor: pointer;
-  letter-spacing: 1.5px;
+  letter-spacing: 1px;
   text-transform: uppercase;
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 8px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-  transition: all 0.15s ease;
 }
 
 .btn-retro:active {
@@ -312,11 +354,7 @@ html, body {
 .btn-primary {
   background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
   border-color: #38bdf8;
-  box-shadow: 0 0 20px rgba(56, 189, 248, 0.3);
-}
-
-.btn-primary:active {
-  background: #0284c7;
+  box-shadow: 0 0 15px rgba(56, 189, 248, 0.3);
 }
 
 .btn-secondary {
@@ -325,9 +363,6 @@ html, body {
   color: #94a3b8;
 }
 
-/* ==========================================================================
-   CANVAS DE GAMEPLAY E HUD
-   ========================================================================== */
 #screen-gameplay {
   padding: 0;
   position: absolute;
@@ -347,9 +382,9 @@ html, body {
 
 .hud-bar {
   position: absolute;
-  top: 12px;
-  left: 14px;
-  right: 14px;
+  top: 8px;
+  left: 10px;
+  right: 10px;
   display: flex;
   justify-content: space-between;
   color: #fff;
@@ -361,13 +396,13 @@ html, body {
 
 .mag-gauge-container {
   position: absolute;
-  right: 12px;
-  top: 80px;
-  bottom: 140px;
-  width: 16px;
+  right: 8px;
+  top: 60px;
+  bottom: 120px;
+  width: 14px;
   background: rgba(0, 0, 0, 0.7);
   border: 1px solid #475569;
-  border-radius: 8px;
+  border-radius: 6px;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -379,81 +414,114 @@ html, body {
   width: 100%;
   height: 20%;
   background: #22c55e;
-  border-radius: 6px;
+  border-radius: 4px;
   transition: height 0.05s ease;
 }
 
 .mag-label {
   position: absolute;
-  bottom: -18px;
-  left: -2px;
+  bottom: -16px;
+  left: -1px;
   font-size: 8px;
   color: #94a3b8;
   font-weight: bold;
 }
 
-.touch-controls {
+/* DOCK INFERIOR FIXADO (Resolve a quebra visual da imagem 2) */
+.gameplay-bottom-dock {
   position: absolute;
-  bottom: 16px;
-  left: 12px;
-  right: 12px;
+  bottom: 8px;
+  left: 10px;
+  right: 10px;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 6px;
   z-index: 20;
+  pointer-events: none;
 }
 
-.cluster-left, .cluster-right {
+.touch-action-row {
   display: flex;
-  gap: 8px;
+  justify-content: flex-end;
+  gap: 10px;
+  pointer-events: auto;
 }
 
 .t-btn {
-  width: 58px;
-  height: 52px;
-  background: rgba(15, 23, 42, 0.88);
-  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  height: 48px;
+  border-radius: 10px;
   color: #fff;
-  font-size: 16px;
-  font-weight: bold;
-  border-radius: 12px;
+  font-weight: 900;
+  border: 1.5px solid rgba(255, 255, 255, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.t-btn-alt {
-  width: 82px;
-  font-size: 10px;
-  background: #4f46e5;
-  border-color: #818cf8;
-}
-
-.t-btn-action {
-  width: 72px;
-  font-size: 11px;
-  background: #0284c7;
-  border-color: #38bdf8;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+  cursor: pointer;
 }
 
 .t-btn:active {
-  background: #fff;
-  color: #000;
+  transform: scale(0.95);
 }
 
-/* ==========================================================================
-   TELA DE GAME OVER E VITÓRIA INTEGRADA (MODAIS SCI-FI)
-   ========================================================================== */
+.t-btn-polarity {
+  width: 90px;
+  font-size: 11px;
+  background: var(--south-blue);
+  border-color: #38bdf8;
+}
+
+.t-btn-action {
+  width: 90px;
+  font-size: 11px;
+  background: #059669;
+  border-color: #34d399;
+}
+
+.mission-timer-container {
+  width: 100%;
+  height: 18px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid #475569;
+  border-radius: 6px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+}
+
+.mission-timer-bar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 100%;
+  background: linear-gradient(90deg, #22c55e, #eab308, #ef4444);
+  transition: width 1s linear;
+  z-index: 1;
+}
+
+.mission-timer-text {
+  position: relative;
+  z-index: 2;
+  font-size: 9px;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 0 0 4px #000;
+  letter-spacing: 1px;
+}
+
 .modal-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(3, 7, 18, 0.92);
-  backdrop-filter: blur(8px);
+  background: rgba(3, 7, 18, 0.94);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 100;
-  padding: 20px;
+  padding: 16px;
 }
 
 .modal-overlay.hidden {
@@ -462,8 +530,8 @@ html, body {
 
 .modal-body {
   background: rgba(15, 23, 42, 0.98);
-  border-radius: 20px;
-  padding: 24px 20px;
+  border-radius: 16px;
+  padding: 18px;
   width: 100%;
   max-width: 360px;
   color: #fff;
@@ -471,37 +539,45 @@ html, body {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 14px;
-  box-shadow: 0 0 50px rgba(0, 0, 0, 0.9);
+  gap: 10px;
+  border: 2px solid #334155;
+}
+
+.tips-box {
+  border-color: var(--accent-neon);
+  text-align: left;
+}
+
+.tips-list {
+  font-size: 11px;
+  line-height: 1.5;
+  color: #cbd5e1;
+  padding-left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .gameover-box {
   border: 2px solid var(--north-red);
-  box-shadow: 0 0 40px rgba(239, 68, 68, 0.35);
-  animation: strobeBorder 1.5s infinite alternate;
-}
-
-@keyframes strobeBorder {
-  0% { border-color: rgba(239, 68, 68, 0.4); }
-  100% { border-color: rgba(239, 68, 68, 1); }
+  box-shadow: 0 0 30px rgba(239, 68, 68, 0.35);
 }
 
 .gameover-title {
   color: var(--north-red);
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 900;
-  letter-spacing: 3px;
-  text-shadow: 0 0 15px rgba(239, 68, 68, 0.8);
+  letter-spacing: 2px;
 }
 
 .victory-box {
   border: 2px solid #22c55e;
-  box-shadow: 0 0 40px rgba(34, 197, 94, 0.35);
+  box-shadow: 0 0 30px rgba(34, 197, 94, 0.35);
 }
 
 .victory-title {
   color: #22c55e;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 900;
   letter-spacing: 2px;
 }
@@ -509,10 +585,10 @@ html, body {
 .modal-telemetry {
   background: rgba(0, 0, 0, 0.5);
   border: 1px solid #334155;
-  border-radius: 10px;
+  border-radius: 8px;
   width: 100%;
-  padding: 12px;
-  font-size: 11px;
+  padding: 10px;
+  font-size: 10px;
   color: #94a3b8;
-  line-height: 1.6;
+  line-height: 1.5;
 }
