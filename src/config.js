@@ -1,103 +1,121 @@
 /**
- * GERENCIADOR DO CINTURÃO DE ASTEROIDES
- * Arquivo: src/asteroids.js
- * Asteroides lentos, sem colisões entre si (passam um atrás do outro).
+ * MAGMAN: SICRON 9 - CONFIGURAÇÕES GLOBAIS DO SISTEMA
+ * Arquivo: src/config.js
  */
-import { CONFIG } from './config.js';
 
-export class AsteroidBelt {
-  constructor(worldWidth, speedMultiplier = 1.0) {
-    this.worldWidth = worldWidth;
-    this.speedMultiplier = speedMultiplier;
-    this.asteroids = [];
-    this.generate();
+export const CONFIG = {
+  WORLD_WIDTH: 2600,             // Largura total explorável lateralmente
+  VIEWPORT_HEIGHT: 750,          // Altura base de referência
+  GRAVITY: 0.38,                 // Aceleração da gravidade no Magman e blocos do solo
+  BLOCK_SIZE: 36,                // Tamanho unificado dos blocos (36x36 px)
+
+  // Cinturão de Asteroides
+  ASTEROID_BELT_Y: 230,          // Altitude intermediária do cinturão
+  ASTEROID_BASE_SPEED: 1.3,      // Velocidade desacelerada (movimento cadenciado)
+  ASTEROID_COUNT: 8,             // Quantidade equilibrada na tela
+  MAGNETIC_PULL_BASE: 0.40,      // Atração dipolar controlável
+
+  // Propulsão
+  LAUNCH_IMPULSE_VY: -12.0       // Impulso de repulsão vertical do arremesso
+};
+
+/**
+ * PLANETAS DO SISTEMA SICRON 9
+ */
+export const PLANETS = [
+  {
+    id: 1,
+    name: "Ferrum-9",
+    color: "#ea580c",
+    nativePolarity: "N",
+    targetCargo: 20,
+    speedMultiplier: 1.0,
+    hazardLevel: "MODERADO",
+    atmosphereName: "Âmbar Sulfúrico Térmico",
+    skyGradient: ["#451a03", "#7c2d12", "#c2410c"],
+    lithosphereName: "Rochas Basálticas e Hematita Oxidada",
+    lithoColor: "#7c2d12",
+    vegetationName: "Agulhas Cristalinas de Ferro",
+    vegColor: "#f97316",
+    completed: false
+  },
+  {
+    id: 2,
+    name: "Dia-Vortex",
+    color: "#0284c7",
+    nativePolarity: "S",
+    targetCargo: 20,
+    speedMultiplier: 1.15,
+    hazardLevel: "MÉDIO",
+    atmosphereName: "Glacial Ciano Rarefeita",
+    skyGradient: ["#082f49", "#0369a1", "#0284c7"],
+    lithosphereName: "Silicato Diamagnético e Cobalto Puro",
+    lithoColor: "#0f172a",
+    vegetationName: "Fungos Luminescentes Criogênicos",
+    vegColor: "#38bdf8",
+    completed: false
+  },
+  {
+    id: 3,
+    name: "Paramag-Alpha",
+    color: "#059669",
+    nativePolarity: "N",
+    targetCargo: 20,
+    speedMultiplier: 1.25,
+    hazardLevel: "ALTO",
+    atmosphereName: "Verde Esmeralda Tóxica Densa",
+    skyGradient: ["#022c22", "#065f46", "#059669"],
+    lithosphereName: "Minérios Paramagnéticos de Cromo",
+    lithoColor: "#064e3b",
+    vegetationName: "Musgo de Esporos e Filamentos",
+    vegColor: "#34d399",
+    completed: false
+  },
+  {
+    id: 4,
+    name: "Aethelgard Prime",
+    color: "#d97706",
+    nativePolarity: "S",
+    targetCargo: 20,
+    speedMultiplier: 1.35,
+    hazardLevel: "CRÍTICO",
+    atmosphereName: "Ocre Dourado / Radiação Ionizante",
+    skyGradient: ["#292524", "#78350f", "#d97706"],
+    lithosphereName: "Pirita Dourada e Crosta Tectônica",
+    lithoColor: "#451a03",
+    vegetationName: "Raízes Fósseis e Gavinhas Condutoras",
+    vegColor: "#fbbf24",
+    completed: false
+  },
+  {
+    id: 5,
+    name: "Sicron Core",
+    color: "#db2777",
+    nativePolarity: "N",
+    targetCargo: 20,
+    speedMultiplier: 1.5,
+    hazardLevel: "EXTREMO",
+    atmosphereName: "Púrpura Quântica de Plasma",
+    skyGradient: ["#3b0764", "#701a75", "#db2777"],
+    lithosphereName: "Crosta Magmática Hiper-Radiativa",
+    lithoColor: "#18181b",
+    vegetationName: "Filamentos de Pura Energia Violeta",
+    vegColor: "#f472b6",
+    completed: false
   }
+];
 
-  generate() {
-    this.asteroids = [];
-    const count = CONFIG.ASTEROID_COUNT;
-
-    for (let i = 0; i < count; i++) {
-      // Velocidade reduzida e movimento calmo
-      const spd = (CONFIG.ASTEROID_BASE_SPEED + Math.random() * 0.8) * this.speedMultiplier;
-      this.asteroids.push({
-        id: i,
-        x: (i * (this.worldWidth / count)) + Math.random() * 80,
-        y: CONFIG.ASTEROID_BELT_Y + (Math.sin(i * 1.8) * 35),
-        radius: 20 + Math.random() * 14,
-        vx: spd * (i % 2 === 0 ? 1 : -1),
-        pullStrength: CONFIG.MAGNETIC_PULL_BASE + (Math.random() * 0.15),
-        rotation: 0,
-        vRot: (Math.random() - 0.5) * 0.02, // Rotação sutil
-        zOrder: i // Define a sobreposição visual sem colisão
-      });
-    }
-
-    // Ordena por zOrder para que a renderização dê profundidade natural
-    this.asteroids.sort((a, b) => a.zOrder - b.zOrder);
+/**
+ * PLATAFORMA CARGUEIRA
+ */
+export const SHIPS = [
+  {
+    id: "titan-platform",
+    name: "Plataforma Orbital Titan V-20",
+    capacity: 20,
+    hullWidth: 260,
+    hullHeight: 28,
+    cargoColumns: 5,
+    cargoRows: 4
   }
-
-  update(magman, onFatalCapture) {
-    for (let i = 0; i < this.asteroids.length; i++) {
-      const ast = this.asteroids[i];
-      ast.x += ast.vx;
-      ast.rotation += ast.vRot;
-
-      // Wrap horizontal no mundo
-      if (ast.x > this.worldWidth + 70) ast.x = -70;
-      if (ast.x < -70) ast.x = this.worldWidth + 70;
-
-      // Atração dipolar sobre o Magman se ele saltar muito perto do cinturão
-      const dx = ast.x - (magman.x + magman.width / 2);
-      const dy = ast.y - (magman.y + magman.height / 2);
-      const dist = Math.sqrt(dx * dx + dy * dy);
-
-      if (dist < 150) {
-        const force = (1 - (dist / 150)) * ast.pullStrength * 3.8;
-        magman.vx += (dx / dist) * force;
-        magman.vy += (dy / dist) * force;
-
-        // Choque direto do astronauta no corpo do asteroide
-        if (dist < ast.radius + (magman.width / 2)) {
-          onFatalCapture("Magman colidiu com o núcleo rochoso de um asteroide magnético!");
-        }
-      }
-    }
-  }
-
-  render(ctx, cameraX) {
-    this.asteroids.forEach(ast => {
-      const rx = ast.x - cameraX;
-      if (rx < -90 || rx > 530) return;
-
-      ctx.save();
-      ctx.translate(rx, ast.y);
-      ctx.rotate(ast.rotation);
-
-      // Campo magnético difuso
-      ctx.strokeStyle = "rgba(56, 189, 248, 0.28)";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(0, 0, ast.radius + 8, 0, Math.PI * 2);
-      ctx.stroke();
-
-      // Corpo rochoso
-      ctx.fillStyle = "#334155";
-      ctx.beginPath();
-      ctx.arc(0, 0, ast.radius, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = "#64748b";
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-
-      // Crateras
-      ctx.fillStyle = "#1e293b";
-      ctx.beginPath();
-      ctx.arc(-ast.radius * 0.35, -ast.radius * 0.2, ast.radius * 0.25, 0, Math.PI * 2);
-      ctx.arc(ast.radius * 0.3, ast.radius * 0.3, ast.radius * 0.2, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.restore();
-    });
-  }
-}
+];
