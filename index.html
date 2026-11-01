@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>MAGMAN: Sicron 9</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="game-app">
+    <!-- Tela 1: Login / Cadastro -->
+    <section id="screen-auth" class="view-panel active">
+      <div class="side-band band-blue"></div>
+      <div class="side-band band-red"></div>
+      <div class="auth-modal">
+        <canvas id="auth-avatar-preview" width="90" height="110"></canvas>
+        <h1 class="game-logo">MAGMAN</h1>
+        <p class="tagline">SISTEMA SICRON 9</p>
+
+        <form id="auth-form" onsubmit="event.preventDefault();">
+          <label for="input-email">E-MAIL OU PILOTO:</label>
+          <input type="text" id="input-email" value="astronauta@sicron.org" placeholder="astronauta@sicron.org" autocomplete="off" />
+
+          <label for="input-password">CÓDIGO DE ACESSO:</label>
+          <input type="password" id="input-password" value="123456" placeholder="••••••••" autocomplete="off" />
+
+          <div class="auth-btn-group">
+            <button type="button" id="btn-login" class="btn-retro btn-primary">ENTRAR</button>
+            <button type="button" id="btn-signup" class="btn-retro btn-secondary">REGISTAR</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- Tela 2: Seleção de Planetas -->
+    <section id="screen-planets" class="view-panel">
+      <div class="dialog-card">
+        Explore os corpos celestes de Sicron 9. Minere minérios magnéticos para abastecer a plataforma cargueira.
+      </div>
+      <div id="planet-matrix" class="planet-list"></div>
+      <div style="margin-top: 12px; display: flex; justify-content: center;">
+        <button id="btn-view-ranking" class="btn-retro btn-secondary">RANKING GLOBAL</button>
+      </div>
+    </section>
+
+    <!-- Tela 3: Briefing Tático do Planeta -->
+    <section id="screen-briefing" class="view-panel">
+      <div class="briefing-hud">
+        <div class="briefing-header">
+          <span style="font-size: 10px; color: var(--accent-neon); letter-spacing: 2px;">VARREDURA ORBITAL</span>
+          <h2 id="briefing-planet-title">PLANETA</h2>
+        </div>
+
+        <div class="planet-data-grid">
+          <div class="data-cell">
+            <span class="data-label">Atmosfera</span>
+            <span class="data-value" id="briefing-atmosphere">-</span>
+          </div>
+          <div class="data-cell">
+            <span class="data-label">Litosfera</span>
+            <span class="data-value" id="briefing-lithosphere">-</span>
+          </div>
+          <div class="data-cell">
+            <span class="data-label">Vegetação</span>
+            <span class="data-value" id="briefing-vegetation">-</span>
+          </div>
+          <div class="data-cell">
+            <span class="data-label">Polaridade Nativa</span>
+            <span class="data-value" id="briefing-polarity">-</span>
+          </div>
+        </div>
+
+        <div class="ship-tactical-card">
+          <h4>PLATAFORMA CARGUEIRA ORBITAL</h4>
+          <p id="briefing-ship-info" style="font-size: 11px; color: #cbd5e1; line-height: 1.4;"></p>
+        </div>
+
+        <p id="briefing-tactical-desc" style="font-size: 11px; color: #94a3b8; line-height: 1.4;"></p>
+      </div>
+
+      <div class="briefing-actions">
+        <button id="btn-launch" class="btn-retro btn-primary">INICIAR POUSO</button>
+        <button id="btn-cancel-briefing" class="btn-retro btn-secondary">RETORNAR</button>
+      </div>
+    </section>
+
+    <!-- Tela 4: Gameplay Canvas -->
+    <section id="screen-gameplay" class="view-panel">
+      <div class="hud-bar">
+        <div class="hud-item">CARGA ACOPLADA: <span id="hud-cargo" style="color: #38bdf8;">0/20</span></div>
+        <div class="hud-item">POLARIDADE: <span id="hud-polarity" style="color: #38bdf8;">SUL/NORTE</span></div>
+      </div>
+
+      <canvas id="viewport"></canvas>
+
+      <div class="mag-gauge-container">
+        <div class="mag-gauge-fill" id="mag-gauge"></div>
+        <span class="mag-label">MAG</span>
+      </div>
+
+      <div class="touch-controls">
+        <div class="cluster-left">
+          <button class="t-btn" id="ctrl-left">◄</button>
+          <button class="t-btn" id="ctrl-right">►</button>
+        </div>
+        <div class="cluster-right">
+          <button class="t-btn t-btn-alt" id="ctrl-polarity">POLARIDADE</button>
+          <button class="t-btn t-btn-action" id="ctrl-action">AÇÃO</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Modal: Game Over -->
+    <div id="modal-gameover" class="modal-overlay hidden">
+      <div class="modal-body gameover-box">
+        <h2 class="gameover-title">ALERTA CRÍTICO</h2>
+        <p id="gameover-reason" style="font-size: 12px; color: #fca5a5; line-height: 1.5;"></p>
+        <div class="modal-telemetry" id="gameover-stats">
+          Telemetria: Traje espacial comprometido.
+        </div>
+        <button id="btn-gameover-retry" class="btn-retro btn-primary" style="margin-top: 6px;">TENTAR NOVAMENTE</button>
+        <button id="btn-gameover-menu" class="btn-retro btn-secondary">MAPA DE PLANETAS</button>
+      </div>
+    </div>
+
+    <!-- Modal: Vitória -->
+    <div id="modal-victory" class="modal-overlay hidden">
+      <div class="modal-body victory-box">
+        <h2 class="victory-title">MISSÃO CUMPRIDA</h2>
+        <p style="font-size: 12px; color: #86efac; line-height: 1.4;">
+          A plataforma cargueira completou a sua quota de minérios com sucesso!
+        </p>
+        <div class="modal-telemetry" id="victory-stats"></div>
+        <button id="btn-victory-continue" class="btn-retro btn-primary" style="margin-top: 6px;">MAPA DE PLANETAS</button>
+      </div>
+    </div>
+
+    <!-- Modal: Ranking -->
+    <div id="modal-ranking" class="modal-overlay hidden">
+      <div class="modal-body">
+        <h3 style="color: var(--accent-neon); letter-spacing: 2px;">TOP PILOTOS DA FEDERAÇÃO</h3>
+        <ul id="leaderboard-list" style="list-style: none; width: 100%; text-align: left; padding: 4px;"></ul>
+        <button id="btn-close-ranking" class="btn-retro btn-secondary" style="margin-top: 8px;">FECHAR</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
