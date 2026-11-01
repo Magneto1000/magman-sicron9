@@ -8,7 +8,7 @@ export const CONFIG = {
   BLOCK_SIZE: 36,               // Tamanho unificado dos blocos (36x36 px)
   ASTEROID_BELT_Y: 200,         // Altitude segura no corredor superior
   ASTEROID_BASE_SPEED: 1.2,     // Velocidade cadenciada
-  ASTEROID_COUNT: 7,
+  ASTEROID_COUNT: 18,
   MAGNETIC_PULL_BASE: 0.38,
   LAUNCH_IMPULSE_VY: -12.0,     // Impulso de arremesso vertical
   MISSION_TIME_LIMIT: 600,      // 10 minutos (600 segundos)

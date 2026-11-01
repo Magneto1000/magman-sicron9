@@ -1,5 +1,5 @@
 /**
- * TERRENO INFINITO COM BLOCOS JUSTAPOSTOS E FORÇA MAGNÉTICA RANDÔMICA
+ * TERRENO INFINITO COM MINERAÇÃO REAL E ABERTURA DE FOSSAS
  * Arquivo: src/terrain.js
  */
 import { CONFIG } from './config.js';
@@ -17,6 +17,9 @@ export class Terrain {
   }
 
   getBlock(col, row) {
+    // Proteção: NUNCA gera blocos no ar (row < 0) ou abaixo do manto (row >= rows)
+    if (row < 0 || row >= this.rows) return null;
+
     const key = `${col}_${row}`;
     if (this.minedBlocks.has(key)) return null;
 
@@ -45,23 +48,12 @@ export class Terrain {
       });
     }
 
-    return this.chunks.get(key);
+    const b = this.chunks.get(key);
+    return (b && b.active) ? b : null;
   }
 
   update() {
-    this.chunks.forEach(b => {
-      if (!b || !b.active) return;
-      const keyBelow = `${b.col}_${b.row + 1}`;
-      const blockBelow = this.chunks.get(keyBelow);
-      const coreLimit = this.getCoreThresholdY() - b.size;
-
-      if ((!blockBelow || !blockBelow.active) && b.y < coreLimit && b.row < this.rows - 1) {
-        b.vy += 0.45;
-        b.y += b.vy;
-      } else {
-        b.vy = 0;
-      }
-    });
+    // Mantém a estabilidade dos blocos
   }
 
   forEachActiveBlockNear(targetX, targetY, callback) {
@@ -80,23 +72,65 @@ export class Terrain {
 
   mineDirectional(magmanX, magmanY, magmanWidth, magmanHeight, facing) {
     const feetCol = Math.floor((magmanX + magmanWidth / 2) / this.blockSize);
-    const feetRow = Math.floor(((magmanY + magmanHeight + 4) - this.groundStartY) / this.blockSize);
+    const feetRow = Math.floor(((magmanY + magmanHeight + 8) - this.groundStartY) / this.blockSize);
 
-    let target = this.getBlock(feetCol, feetRow);
+    const frontCol = facing === 'left'
+      ? Math.floor((magmanX - 8) / this.blockSize)
+      : Math.floor((magmanX + magmanWidth + 8) / this.blockSize);
+    const frontRow = Math.floor(((magmanY + magmanHeight - 6) - this.groundStartY) / this.blockSize);
+    const chestRow = Math.floor(((magmanY + magmanHeight * 0.5) - this.groundStartY) / this.blockSize);
 
-    if (!target || !target.active) {
-      const sideCol = facing === 'left' 
-        ? Math.floor((magmanX - 8) / this.blockSize)
-        : Math.floor((magmanX + magmanWidth + 8) / this.blockSize);
-      const chestRow = Math.floor(((magmanY + (magmanHeight * 0.6)) - this.groundStartY) / this.blockSize);
-      target = this.getBlock(sideCol, chestRow);
+    // Ordem de prioridade de coleta:
+    // 1. Sob os pés (abre a fossa no chão)
+    // 2. À frente no chão (escava valas à frente)
+    // 3. Na parede lateral (se já estiver dentro de um fosso)
+    const targets = [
+      { c: feetCol, r: feetRow },
+      { c: frontCol, r: frontRow },
+      { c: frontCol, r: chestRow }
+    ];
+
+    for (const t of targets) {
+      if (t.r >= 0 && t.r < this.rows) {
+        const block = this.getBlock(t.c, t.r);
+        if (block && block.active) {
+          block.active = false;
+          this.minedBlocks.add(block.id);
+          this.chunks.delete(block.id); // Remove imediatamente para abrir o buraco
+          return { ...block };
+        }
+      }
     }
 
-    if (target && target.active) {
-      target.active = false;
-      this.minedBlocks.add(target.id);
-      return { ...target };
+    // Busca de proximidade para garantir a captura sem falhas
+    const centerX = magmanX + magmanWidth / 2;
+    const centerY = magmanY + magmanHeight;
+    let closest = null;
+    let minDist = 48;
+
+    const startCol = Math.floor((centerX - 60) / this.blockSize);
+    const endCol = Math.ceil((centerX + 60) / this.blockSize);
+
+    for (let c = startCol; c <= endCol; c++) {
+      for (let r = 0; r < this.rows; r++) {
+        const b = this.getBlock(c, r);
+        if (b && b.active) {
+          const dist = Math.hypot(centerX - (b.x + b.size / 2), centerY - (b.y + b.size / 2));
+          if (dist < minDist) {
+            minDist = dist;
+            closest = b;
+          }
+        }
+      }
     }
+
+    if (closest && closest.active) {
+      closest.active = false;
+      this.minedBlocks.add(closest.id);
+      this.chunks.delete(closest.id);
+      return { ...closest };
+    }
+
     return null;
   }
 
@@ -142,6 +176,7 @@ export class Terrain {
             ctx.fillRect(screenX + b.size - 8, b.y - 4, 6, 4);
           }
         }
+        // Blocos minerados permanecem como espaço vazio (fossas)
       }
     }
   }

@@ -411,7 +411,12 @@ class MagmanApp {
       this.magman.facing
     );
 
-    if (block) {
+   if (block) {
+      // Efeito imediato de fragmentação no chão
+      if (this.particles) {
+        this.particles.shatterBlock(block.x + block.size / 2, block.y + block.size / 2, block.type);
+      }
+
       this.magman.carryingRock = {
         type: block.type,
         polarityTop: block.polarityTop,
@@ -504,10 +509,13 @@ class MagmanApp {
     }
 
     // 5. Asteroides no corredor intermediário
-    this.asteroids.update(this.magman, (failMsg) => {
-      this.triggerGameOver(failMsg);
-    });
-
+    // 5. Asteroides acompanhando a câmera no terreno infinito
+    this.asteroids.update(
+      this.magman,
+      (failMsg) => { this.triggerGameOver(failMsg); },
+      this.camera.x,
+      this.viewport.width
+    );
     // 6. Colisão de asteroides com caixas acopladas na plataforma
     const exposedBoxes = this.ship.getExposedCargoBoundingBoxes();
     this.asteroids.asteroids.forEach(ast => {
