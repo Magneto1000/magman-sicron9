@@ -23,12 +23,12 @@ import {
 
 // Substitua com as credenciais do seu console Firebase
 const firebaseConfig = {
-  apiKey: "SUA_API_KEY_AQUI",
+  apiKey: "AIzaSyBm3k0mKjPprdUtHiAEQWuj20FnFijqvF8",
   authDomain: "magman-sicron9.firebaseapp.com",
   projectId: "magman-sicron9",
-  storageBucket: "magman-sicron9.appspot.com",
-  messagingSenderId: "000000000000",
-  appId: "1:000000000000:web:0000000000000000000000"
+  storageBucket: "magman-sicron9.firebasestorage.app",
+  messagingSenderId: "19239345538",
+  appId: "1:19239345538:web:8b6453eac7acdd7879439b"
 };
 
 const isConfigured = firebaseConfig.apiKey !== "SUA_API_KEY_AQUI";
