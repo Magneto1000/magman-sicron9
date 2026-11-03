@@ -26,6 +26,11 @@ class MagmanApp {
     this.missionTimeRemaining = CONFIG.MISSION_TIME_SECONDS || 240;
     this.lastFrameTime = performance.now();
 
+    // VARIÁVEIS DE PUNIÇÃO DE INATIVIDADE
+    this.idleTimer = 0;
+    this.isChainReactionActive = false;
+    this.explosionDelayTimer = 0;
+
     this.initDOM();
   }
 
@@ -196,7 +201,6 @@ class MagmanApp {
     ctx.fillRect(50, 58, 12, 34);
   }
 
-  // REDIMENSIONAMENTO INTELIGENTE: SEPARA VERTICAL (NATIVO) DE HORIZONTAL (VIRTUAL 600PX)
   resizeViewport() {
     const container = document.getElementById('screen-gameplay');
     const screenW = (container && container.clientWidth) ? container.clientWidth : window.innerWidth;
@@ -205,13 +209,11 @@ class MagmanApp {
     const isLandscape = (screenW > screenH) && (screenH < 560);
 
     if (isLandscape) {
-      // No modo paisagem, fixa 600px de altura útil e estende a largura proporcionalmente
       const TARGET_VIRTUAL_HEIGHT = 600;
       const aspect = screenW / screenH;
       this.viewport.height = TARGET_VIRTUAL_HEIGHT;
       this.viewport.width = Math.round(TARGET_VIRTUAL_HEIGHT * aspect);
     } else {
-      // No modo retrato, mantém 1:1 nativo exatamente como já estava perfeito
       this.viewport.width = screenW;
       this.viewport.height = screenH;
     }
@@ -314,7 +316,6 @@ class MagmanApp {
       const handleTouchMovement = (clientX) => {
         if (!this.magman || !this.camera) return;
 
-        // Converte o toque da tela física para a coordenada virtual do Canvas
         const rect = this.viewport.getBoundingClientRect();
         const scaleX = this.viewport.width / rect.width;
         const canvasTouchX = (clientX - rect.left) * scaleX;
@@ -454,6 +455,10 @@ class MagmanApp {
       this.launchedRocks.push(rock);
       this.magman.carryingRock = null;
       this.updateActionBtnUI();
+
+      // INTERROMPE A PUNIÇÃO IMEDIATAMENTE AO LANÇAR O BLOCO
+      this.idleTimer = 0;
+      this.isChainReactionActive = false;
       return;
     }
 
@@ -491,6 +496,10 @@ class MagmanApp {
     this.launchedRocks = [];
     this.missionTimeRemaining = CONFIG.MISSION_TIME_SECONDS || 240;
     this.lastFrameTime = performance.now();
+    
+    // Reseta temporizadores de inatividade
+    this.idleTimer = 0;
+    this.isChainReactionActive = false;
 
     const cargoHud = document.getElementById('hud-cargo');
     if (cargoHud) cargoHud.innerText = `0/${this.activePlanet.targetCargo}`;
@@ -505,14 +514,12 @@ class MagmanApp {
     this.particles = new ParticleSystem();
     this.ship = new CargoShip(this.activeShip, 0, vHeight);
 
-    // Altitude equilibrada: Asteroides sempre no centro do corredor aéreo
     const shipBottom = this.ship.y + this.ship.height + 24;
     const groundTop = this.terrain.groundStartY;
     const midSkyY = shipBottom + (groundTop - shipBottom) * 0.44;
 
     this.asteroids = new AsteroidBelt(this.activePlanet.speedMultiplier || 1.0, midSkyY);
 
-    // Magman de pé no solo com ampla altura livre até os asteroides
     const magmanStartY = this.terrain.groundStartY - 54;
     this.magman = new Magman(0, magmanStartY);
     this.crabs = new CrabManager();
@@ -548,6 +555,49 @@ class MagmanApp {
       return;
     }
     this.updateTimerBarUI();
+
+    // -------------------------------------------------------------
+    // LÓGICA DE PUNIÇÃO POR INATIVIDADE (30 SEGUNDOS)
+    // -------------------------------------------------------------
+    if (!this.isChainReactionActive) {
+      this.idleTimer += deltaSec;
+      
+      if (this.idleTimer >= 30.0) {
+        this.isChainReactionActive = true;
+        this.explosionDelayTimer = 1.0; 
+      }
+    } else {
+      this.explosionDelayTimer -= deltaSec;
+      
+      if (this.explosionDelayTimer <= 0) {
+        // Encontra os blocos lançados (na nave/plataforma)
+        const exposedBoxes = this.ship.getExposedCargoBoundingBoxes();
+        
+        if (exposedBoxes && exposedBoxes.length > 0) {
+          // Destroi o último bloco coletado
+          const box = exposedBoxes[exposedBoxes.length - 1];
+          
+          if (this.particles && typeof this.particles.shatterBlock === 'function') {
+            this.particles.shatterBlock(box.x, box.y, box.type);
+          }
+          
+          this.ship.removeTopCargo();
+          this.cargoCollected = Math.max(0, this.cargoCollected - 1);
+          
+          const cargoHud = document.getElementById('hud-cargo');
+          if (cargoHud) cargoHud.innerText = `${this.cargoCollected}/${this.activePlanet.targetCargo}`;
+          
+          // Gera um Scrab no local da explosão
+          this.crabs.spawnFromExplodedBlock(box.x, box.y);
+          
+          this.explosionDelayTimer = 1.0;
+        } else {
+          // Nave vazia, encerra a punição
+          this.isChainReactionActive = false;
+          this.idleTimer = 0;
+        }
+      }
+    }
 
     this.magman.update(this.touchMoveDirection, this.terrain, deltaSec);
     this.camera.follow(this.magman.x);

@@ -66,6 +66,7 @@ export class Magman {
 
     this.resolveVerticalCollisions(terrain);
 
+    // Se estiver a carregar a rocha, atualiza a posição dela para ficar acima das mãos
     if (this.carryingRock && !this.carryingRock.isLaunched) {
       const bSize = CONFIG.BLOCK_SIZE || 36;
       this.carryingRock.size = bSize;
@@ -100,6 +101,8 @@ export class Magman {
 
     const checkBlock = (b) => {
       if (!b || !b.active) return;
+      
+      // Verifica se os pés do Magman estão cruzando o topo do bloco caindo (vy >= 0)
       if (
         this.x + this.width > b.x &&
         this.x < b.x + b.size &&
@@ -107,9 +110,12 @@ export class Magman {
         this.y + this.height <= b.y + 18 &&
         this.vy >= 0
       ) {
-        if (this.polarityLower !== b.polarityTop) {
+        // CORREÇÃO: Pulos magnéticos. 
+        // Se a polaridade da bota for IGUAL à do topo do bloco -> REPELE (Pulo)
+        if (this.polarityLower === b.polarityTop) {
           this.vy = -(Number(b.repulseForce) || 8.2);
         } else {
+          // Se forem DIFERENTES -> ATRAI (Gruda no chão e anda normalmente)
           this.y = b.y - this.height;
           this.vy = 0;
           this.isGrounded = true;
@@ -134,7 +140,7 @@ export class Magman {
 
     ctx.save();
 
-    // Rocha Carregada
+    // Rocha Carregada (Visual)
     if (this.carryingRock && !this.carryingRock.isLaunched) {
       const rock = this.carryingRock;
       const rockX = rock.x - cameraX;

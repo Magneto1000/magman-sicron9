@@ -1,5 +1,5 @@
 /**
- * INIMIGOS: CARANGUEJOS ESPACIAIS DE SICRON 9 (IA COM FUGA TEMPORIZADA DE 10S)
+ * INIMIGOS: CARANGUEJOS ESPACIAIS DE SICRON 9 (IA COM FUGA POR EMPILHAMENTO/ZOMBIE PILE)
  * Arquivo: src/crabs.js
  */
 import { CONFIG } from './config.js';
@@ -12,6 +12,20 @@ export class CrabManager {
     this.lastDelta = 0.016;
   }
 
+  // Adicione dentro de CrabManager
+  spawnFromExplodedBlock(x, y) {
+    const colors = ['#cbd5e1', '#eab308'];
+    const direction = Math.random() > 0.5 ? 1 : -1;
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    
+    const crab = new SpaceCrab(x, y - 10, direction, color);
+    
+    // Dá um leve salto vertical para simular a explosão antes de cair
+    crab.vy = -4.0; 
+    
+    this.crabs.push(crab);
+  }
+  
   // Acumula novas levas de caranguejos a cada 30 segundos
   updateTimer(deltaTimeSeconds) {
     this.lastDelta = deltaTimeSeconds;
@@ -39,7 +53,7 @@ export class CrabManager {
       crab.update(magman, terrain, this.crabs, dt);
 
       // Causa dano se colidir e Magman não estiver imune
-      if (!crab.isStuckDeep && !magman.isInvulnerable && this.checkCollision(crab, magman)) {
+      if (!magman.isInvulnerable && this.checkCollision(crab, magman)) {
         onMagmanCaught("Você foi ferido por um caranguejo alienígena de Sicron!");
         return;
       }
@@ -73,69 +87,32 @@ class SpaceCrab {
     this.color = color;
     this.legCycle = 0;
     this.isGrounded = false;
-    this.isStuckDeep = false;
-
-    // Cronômetro Individual de Fuga (10 Segundos)
-    this.isTrapped = false;
-    this.trappedTimer = 0;
-    this.isLeapingOut = false;
+    
+    // Cooldown para evitar que o caranguejo pule a cada frame quando bater na parede
+    this.jumpCooldown = 0;
   }
 
   update(magman, terrain, allCrabs, dt) {
     this.legCycle += 0.2;
+    this.jumpCooldown = Math.max(0, this.jumpCooldown - dt);
 
     const groundLevelY = terrain?.groundStartY || 0;
     const inHole = this.y > groundLevelY + 8;
 
-    // 1. MONITORAMENTO INDIVIDUAL DO TEMPO NO BURACO
-    if (inHole && !this.isLeapingOut) {
-      if (!this.isTrapped) {
-        // Entrou na fossa agora: inicia a contagem regressiva de 10s
-        this.isTrapped = true;
-        this.trappedTimer = 10.0;
-      } else {
-        // Desconta o tempo restante
-        this.trappedTimer -= dt;
-
-        // Ao esgotar os 10 segundos, executa o grande salto de escape
-        if (this.trappedTimer <= 0) {
-          this.vy = -10.8; // Força vertical suficiente para saltar de fossas de até 3 blocos
-          this.vx = this.direction * 3.2; // Projeção horizontal para a borda
-          this.isTrapped = false;
-          this.trappedTimer = 0;
-          this.isLeapingOut = true;
-          this.isStuckDeep = false;
-        }
-      }
-    } else if (!inHole && this.isGrounded) {
-      // Quando já estiver com os pés firmes na superfície, normaliza os estados
-      this.isTrapped = false;
-      this.trappedTimer = 0;
-      this.isLeapingOut = false;
-    }
-
-    // 2. MOVIMENTAÇÃO HORIZONTAL
-    if (this.isTrapped && !this.isLeapingOut) {
-      // Preso no fundo: movimenta-se devagar agitado contra as paredes
-      this.direction = magman.x > this.x ? 1 : -1;
-      this.vx = (this.speed * 0.45) * this.direction;
-      this.isStuckDeep = true;
-    } else if (!this.isLeapingOut) {
-      this.direction = magman.x > this.x ? 1 : -1;
-      this.vx = this.speed * this.direction;
-      this.isStuckDeep = false;
-    }
+    // 1. MOVIMENTAÇÃO HORIZONTAL CONTÍNUA (Sempre tenta ir até o jogador para acumular nas bordas)
+    this.direction = magman.x > this.x ? 1 : -1;
+    this.vx = this.speed * this.direction;
 
     this.x += this.vx;
 
-    // Gravidade
+    // 2. GRAVIDADE
     this.vy += CONFIG.GRAVITY || 0.38;
     this.y += this.vy;
     this.isGrounded = false;
 
     // 3. FÍSICA E COLISÃO COM OS BLOCOS
     const handleBlockCollision = (b) => {
-      // Pouso em bloco
+      // Colisão de Pouso (Chão)
       if (
         this.x + this.width > b.x &&
         this.x < b.x + b.size &&
@@ -148,16 +125,24 @@ class SpaceCrab {
         this.isGrounded = true;
       }
 
-      // Barreira de paredes: só trava se NÃO estiver no meio do salto de saída
-      if (!this.isLeapingOut) {
-        if (
-          this.x < b.x + b.size &&
-          this.x + this.width > b.x &&
-          this.y < b.y + b.size &&
-          this.y + this.height - 8 > b.y
-        ) {
-          if (this.vx > 0) this.x = b.x - this.width;
-          if (this.vx < 0) this.x = b.x + b.size;
+      // Barreira de paredes (Colisão lateral)
+      if (
+        this.x < b.x + b.size &&
+        this.x + this.width > b.x &&
+        this.y < b.y + b.size &&
+        this.y + this.height - 8 > b.y
+      ) {
+        // Empurra o caranguejo para fora da parede
+        if (this.vx > 0) this.x = b.x - this.width;
+        if (this.vx < 0) this.x = b.x + b.size;
+
+        // LÓGICA DE FUGA: Se bater na parede e estiver no chão (ou sobre outro caranguejo), ele pula.
+        if (this.isGrounded && this.jumpCooldown <= 0) {
+          // A força de -6.2 é o "sweet spot": forte para pular 1 bloco sozinho, 
+          // mas fraca para 2 blocos, forçando-os a formar a pilha de 3+ caranguejos.
+          this.vy = -6.2; 
+          this.isGrounded = false;
+          this.jumpCooldown = 0.5; // Aguarda meio segundo antes de conseguir pular de novo
         }
       }
     };
@@ -168,18 +153,19 @@ class SpaceCrab {
       terrain.blocks.filter(b => b.active).forEach(handleBlockCollision);
     }
 
-    // 4. COLISÃO ENTRE CARANGUEJOS DENTRO DO MESMO BURACO
+    // 4. MECÂNICA DE EMPILHAMENTO (ZOMBIE PILE) DENTRO DO BURACO
     if (inHole) {
       allCrabs.forEach(other => {
         if (other !== this && Math.abs(other.x - this.x) < 22) {
+          // Se cair em cima de outro caranguejo, ele "pousa" nas costas dele
           if (
             this.y + this.height >= other.y &&
             this.y + this.height <= other.y + 14 &&
             this.vy >= 0
           ) {
-            this.y = other.y - this.height;
+            this.y = other.y - this.height; // Fica exatamente em cima
             this.vy = 0;
-            this.isGrounded = true;
+            this.isGrounded = true; // Isso permite que o caranguejo do topo execute o pulo!
           }
         }
       });
@@ -223,13 +209,8 @@ class SpaceCrab {
     ctx.fillRect(rx + 6, ry + 13, this.width - 12, 3);
     ctx.fillRect(rx + 8, ry + 19, this.width - 16, 3);
 
-    // Efeito visual de alerta: quando faltam menos de 2.5s para pular, os olhos piscam em amarelo/laranja
-    let eyeColor = "#ef4444";
-    if (this.isTrapped && this.trappedTimer < 2.5) {
-      eyeColor = Math.floor(this.trappedTimer * 8) % 2 === 0 ? "#facc15" : "#ea580c";
-    }
-
-    ctx.fillStyle = eyeColor;
+    // Olhos
+    ctx.fillStyle = "#ef4444";
     if (this.direction > 0) {
       ctx.fillRect(rx + this.width - 8, ry + 10, 4, 4);
     } else {
@@ -241,16 +222,6 @@ class SpaceCrab {
     const clawX = this.direction > 0 ? rx + this.width - 2 : rx - 8;
     ctx.fillRect(clawX, ry + 6, 8, 10);
     ctx.strokeRect(clawX, ry + 6, 8, 10);
-
-    // Indicador sutil de carregamento do salto sobre a cabeça do caranguejo aprisionado
-    if (this.isTrapped && this.trappedTimer > 0) {
-      const barW = 20;
-      const progress = 1 - (this.trappedTimer / 10.0);
-      ctx.fillStyle = "rgba(15, 23, 42, 0.75)";
-      ctx.fillRect(rx + (this.width / 2) - (barW / 2), ry - 6, barW, 3);
-      ctx.fillStyle = progress > 0.75 ? "#facc15" : "#38bdf8";
-      ctx.fillRect(rx + (this.width / 2) - (barW / 2), ry - 6, barW * progress, 3);
-    }
 
     ctx.restore();
   }

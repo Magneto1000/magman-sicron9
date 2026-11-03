@@ -14,6 +14,18 @@ export class Terrain {
 
     this.chunks = new Map();
     this.minedBlocks = new Set();
+    
+    // Lista auxiliar para blocos dinâmicos/artificiais (ex: lançados pelo Magman)
+    this.dynamicBlocks = []; 
+  }
+
+  // GETTER: Retorna todos os blocos (naturais gerados + lançados pelo jogador) 
+  // O main.js usa essa propriedade para a reação em cadeia
+  get blocks() {
+    return [
+      ...Array.from(this.chunks.values()),
+      ...this.dynamicBlocks
+    ];
   }
 
   resize(newCanvasHeight) {
@@ -23,6 +35,9 @@ export class Terrain {
 
     const dy = this.groundStartY - oldStartY;
     this.chunks.forEach(b => {
+      b.y += dy;
+    });
+    this.dynamicBlocks.forEach(b => {
       b.y += dy;
     });
   }
@@ -54,7 +69,8 @@ export class Terrain {
         polarityTop: polarity,
         repulseForce: randomRepulse,
         active: true,
-        vy: 0
+        vy: 0,
+        isPlayerBlock: false // Blocos naturais do solo nunca são blocos de punição
       });
     }
 
@@ -68,6 +84,7 @@ export class Terrain {
     const startCol = Math.floor((targetX - 100) / this.blockSize);
     const endCol = Math.ceil((targetX + 100) / this.blockSize);
 
+    // 1. Checa blocos do cenário natural
     for (let c = startCol; c <= endCol; c++) {
       for (let r = 0; r < this.rows; r++) {
         const b = this.getBlock(c, r);
@@ -76,6 +93,13 @@ export class Terrain {
         }
       }
     }
+    
+    // 2. Checa blocos artificiais lançados pelo jogador (que podem não estar alinhados ao grid rígido)
+    this.dynamicBlocks.forEach(b => {
+      if (b.active && Math.abs(b.x - targetX) < 100) {
+        callback(b);
+      }
+    });
   }
 
   mineDirectional(magmanX, magmanY, magmanWidth, magmanHeight, facing) {
@@ -153,33 +177,49 @@ export class Terrain {
     const minCol = Math.floor((cameraX - 60) / this.blockSize);
     const maxCol = Math.ceil((cameraX + viewportWidth + 60) / this.blockSize);
 
+    // Renderiza blocos naturais
     for (let c = minCol; c <= maxCol; c++) {
       for (let r = 0; r < this.rows; r++) {
         const b = this.getBlock(c, r);
-        if (b && b.active) {
-          const screenX = b.x - cameraX;
-
-          ctx.fillStyle = b.type === 'FERRO' ? '#b91c1c' : (b.type === 'PARA' ? '#047857' : '#d97706');
-          ctx.fillRect(screenX, b.y, b.size, b.size);
-
-          ctx.strokeStyle = "rgba(255,255,255,0.18)";
-          ctx.lineWidth = 1;
-          ctx.strokeRect(screenX, b.y, b.size, b.size);
-
-          ctx.fillStyle = b.polarityTop === 'N' ? '#ef4444' : '#0284c7';
-          ctx.fillRect(screenX + (b.size / 2) - 6, b.y + 3, 12, 4);
-
-          ctx.fillStyle = "#ffffff";
-          ctx.font = "bold 9px monospace";
-          ctx.fillText(b.polarityTop, screenX + (b.size / 2) - 3, b.y + 15);
-
-          if (r === 0) {
-            ctx.fillStyle = this.planet?.vegColor || "#22c55e";
-            ctx.fillRect(screenX + 2, b.y - 4, 6, 4);
-            ctx.fillRect(screenX + b.size - 8, b.y - 4, 6, 4);
-          }
-        }
+        this._drawSingleBlock(ctx, b, cameraX, r === 0);
       }
+    }
+    
+    // Renderiza blocos dinâmicos do jogador
+    this.dynamicBlocks.forEach(b => {
+      this._drawSingleBlock(ctx, b, cameraX, false);
+    });
+  }
+  
+  // Função auxiliar criada para não repetir código de desenho
+  _drawSingleBlock(ctx, b, cameraX, drawVegetation) {
+    if (!b || !b.active) return;
+    const screenX = b.x - cameraX;
+
+    // Distingue visualmente um bloco lançado (cinzento) de um do solo natural
+    if (b.isPlayerBlock) {
+      ctx.fillStyle = "#94a3b8"; 
+    } else {
+      ctx.fillStyle = b.type === 'FERRO' ? '#b91c1c' : (b.type === 'PARA' ? '#047857' : '#d97706');
+    }
+    
+    ctx.fillRect(screenX, b.y, b.size, b.size);
+
+    ctx.strokeStyle = "rgba(255,255,255,0.18)";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(screenX, b.y, b.size, b.size);
+
+    ctx.fillStyle = b.polarityTop === 'N' ? '#ef4444' : '#0284c7';
+    ctx.fillRect(screenX + (b.size / 2) - 6, b.y + 3, 12, 4);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 9px monospace";
+    ctx.fillText(b.polarityTop, screenX + (b.size / 2) - 3, b.y + 15);
+
+    if (drawVegetation && !b.isPlayerBlock) {
+      ctx.fillStyle = this.planet?.vegColor || "#22c55e";
+      ctx.fillRect(screenX + 2, b.y - 4, 6, 4);
+      ctx.fillRect(screenX + b.size - 8, b.y - 4, 6, 4);
     }
   }
 }
