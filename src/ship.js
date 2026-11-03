@@ -1,5 +1,5 @@
 /**
- * PLATAFORMA ORBITAL CARGUEIRA COM POSICIONAMENTO DINÂMICO
+ * PLATAFORMA ORBITAL CARGUEIRA
  * Arquivo: src/ship.js
  */
 import { CONFIG } from './config.js';
@@ -11,9 +11,7 @@ export class CargoShip {
     this.width = shipData.hullWidth || 260;
     this.height = shipData.hullHeight || 28;
     this.x = startX;
-    
-    // Altura dinâmica: 10px em landscape curto, 28px em telas altas
-    this.y = canvasHeight < 520 ? 10 : 28;
+    this.y = 24; // Altura nobre e espaçosa no teto
     this.flameTimer = 0;
 
     this.cargoColumns = 5;
@@ -24,7 +22,7 @@ export class CargoShip {
   }
 
   resize(canvasHeight) {
-    this.y = canvasHeight < 520 ? 10 : 28;
+    this.y = 24;
   }
 
   update(magmanX, magmanWidth) {
@@ -103,7 +101,6 @@ export class CargoShip {
     renderNacelle(rx - nacelleWidth + 6, this.y - 6, true);
     renderNacelle(rx + this.width - 6, this.y - 6, false);
 
-    // Casco da plataforma
     ctx.fillStyle = "#334155";
     ctx.fillRect(rx, this.y, this.width, this.height);
     ctx.strokeStyle = "#94a3b8";
@@ -116,7 +113,6 @@ export class CargoShip {
     ctx.fillStyle = "#38bdf8";
     ctx.fillRect(rx + 8, this.y + this.height - 2, this.width - 16, 2);
 
-    // Caixas acopladas
     const totalCargoWidth = (this.cargoColumns * this.boxSize) + ((this.cargoColumns - 1) * this.cargoGap);
     const startX = rx + (this.width - totalCargoWidth) / 2;
 

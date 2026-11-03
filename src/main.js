@@ -196,34 +196,40 @@ class MagmanApp {
     ctx.fillRect(50, 58, 12, 34);
   }
 
+  // REDIMENSIONAMENTO INTELIGENTE: SEPARA VERTICAL (NATIVO) DE HORIZONTAL (VIRTUAL 600PX)
   resizeViewport() {
     const container = document.getElementById('screen-gameplay');
-    const w = (container && container.clientWidth) ? container.clientWidth : window.innerWidth;
-    const h = (container && container.clientHeight) ? container.clientHeight : window.innerHeight;
-    
-    if (this.viewport) {
-      this.viewport.width = w;
-      this.viewport.height = h;
+    const screenW = (container && container.clientWidth) ? container.clientWidth : window.innerWidth;
+    const screenH = (container && container.clientHeight) ? container.clientHeight : window.innerHeight;
+
+    const isLandscape = (screenW > screenH) && (screenH < 560);
+
+    if (isLandscape) {
+      // No modo paisagem, fixa 600px de altura útil e estende a largura proporcionalmente
+      const TARGET_VIRTUAL_HEIGHT = 600;
+      const aspect = screenW / screenH;
+      this.viewport.height = TARGET_VIRTUAL_HEIGHT;
+      this.viewport.width = Math.round(TARGET_VIRTUAL_HEIGHT * aspect);
+    } else {
+      // No modo retrato, mantém 1:1 nativo exatamente como já estava perfeito
+      this.viewport.width = screenW;
+      this.viewport.height = screenH;
     }
 
     if (this.camera) {
-      this.camera.viewportWidth = w;
-      this.camera.viewportHeight = h;
+      this.camera.viewportWidth = this.viewport.width;
+      this.camera.viewportHeight = this.viewport.height;
     }
 
     if (this.ship && typeof this.ship.resize === 'function') {
-      this.ship.resize(h);
+      this.ship.resize(this.viewport.height);
     }
 
     if (this.terrain && typeof this.terrain.resize === 'function') {
-      this.terrain.resize(h);
-
-      if (this.magman) {
-        // Se a tela encolheu, não deixa o Magman ficar soterrado
-        if (this.magman.y + this.magman.height > this.terrain.groundStartY) {
-          this.magman.y = this.terrain.groundStartY - this.magman.height;
-          this.magman.vy = 0;
-        }
+      this.terrain.resize(this.viewport.height);
+      if (this.magman && this.magman.y + this.magman.height > this.terrain.groundStartY) {
+        this.magman.y = this.terrain.groundStartY - this.magman.height;
+        this.magman.vy = 0;
       }
     }
   }
@@ -307,8 +313,14 @@ class MagmanApp {
     if (this.viewport) {
       const handleTouchMovement = (clientX) => {
         if (!this.magman || !this.camera) return;
+
+        // Converte o toque da tela física para a coordenada virtual do Canvas
+        const rect = this.viewport.getBoundingClientRect();
+        const scaleX = this.viewport.width / rect.width;
+        const canvasTouchX = (clientX - rect.left) * scaleX;
+
         const magmanScreenX = this.magman.x - this.camera.x;
-        this.touchMoveDirection = clientX < magmanScreenX ? -1 : 1;
+        this.touchMoveDirection = canvasTouchX < magmanScreenX ? -1 : 1;
       };
 
       this.viewport.addEventListener('pointerdown', (e) => {
@@ -484,8 +496,8 @@ class MagmanApp {
     if (cargoHud) cargoHud.innerText = `0/${this.activePlanet.targetCargo}`;
     this.updateActionBtnUI();
 
-    const vWidth = this.viewport ? this.viewport.width : window.innerWidth;
-    const vHeight = this.viewport ? this.viewport.height : window.innerHeight;
+    const vWidth = this.viewport.width;
+    const vHeight = this.viewport.height;
 
     this.camera = new Camera(vWidth, vHeight);
     this.parallax = new BackgroundParallax(this.activePlanet);
@@ -493,14 +505,14 @@ class MagmanApp {
     this.particles = new ParticleSystem();
     this.ship = new CargoShip(this.activeShip, 0, vHeight);
 
-    // CÁLCULO DINÂMICO DO CINTURÃO: Centro exato entre o fundo da nave e o solo
+    // Altitude equilibrada: Asteroides sempre no centro do corredor aéreo
     const shipBottom = this.ship.y + this.ship.height + 24;
     const groundTop = this.terrain.groundStartY;
-    const midSkyY = shipBottom + (groundTop - shipBottom) * 0.42;
+    const midSkyY = shipBottom + (groundTop - shipBottom) * 0.44;
 
     this.asteroids = new AsteroidBelt(this.activePlanet.speedMultiplier || 1.0, midSkyY);
 
-    // Pousa o Magman exatamente de pé sobre o relevo, sem sufocar contra a nave
+    // Magman de pé no solo com ampla altura livre até os asteroides
     const magmanStartY = this.terrain.groundStartY - 54;
     this.magman = new Magman(0, magmanStartY);
     this.crabs = new CrabManager();
@@ -549,16 +561,15 @@ class MagmanApp {
     }
     this.crabs.update(this.magman, this.terrain, (failMsg) => {
       this.handleDamage(failMsg);
-    });
+    }, deltaSec);
 
     if (this.magman.y > this.terrain.getCoreThresholdY()) {
       this.triggerGameOver("Magman desceu além da litosfera e caiu no manto superaquecido!");
       return;
     }
 
-    // Passa a altitude dinâmica para os asteroides manterem-se centralizados no céu
     const shipBottom = this.ship.y + this.ship.height + 20;
-    const currentBeltY = shipBottom + (this.terrain.groundStartY - shipBottom) * 0.42;
+    const currentBeltY = shipBottom + (this.terrain.groundStartY - shipBottom) * 0.44;
 
     this.asteroids.update(
       this.magman,

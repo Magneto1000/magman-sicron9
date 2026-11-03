@@ -1,5 +1,5 @@
 /**
- * INIMIGOS: CARANGUEJOS ESPACIAIS DE SICRON 9
+ * INIMIGOS: CARANGUEJOS ESPACIAIS DE SICRON 9 (IA COM FUGA TEMPORIZADA DE 10S)
  * Arquivo: src/crabs.js
  */
 import { CONFIG } from './config.js';
@@ -9,9 +9,12 @@ export class CrabManager {
     this.crabs = [];
     this.spawnTimer = 0;
     this.accumulatedSpawnCount = 2;
+    this.lastDelta = 0.016;
   }
 
+  // Acumula novas levas de caranguejos a cada 30 segundos
   updateTimer(deltaTimeSeconds) {
+    this.lastDelta = deltaTimeSeconds;
     this.spawnTimer += deltaTimeSeconds;
     if (this.spawnTimer >= 30) {
       this.spawnTimer = 0;
@@ -28,12 +31,14 @@ export class CrabManager {
     this.crabs.push(new SpaceCrab(rightX, groundY - 45, -1, colors[Math.floor(Math.random() * colors.length)]));
   }
 
-update(magman, terrain, onMagmanCaught) {
+  update(magman, terrain, onMagmanCaught, deltaSec) {
+    const dt = deltaSec || this.lastDelta || 0.016;
+
     for (let i = 0; i < this.crabs.length; i++) {
       const crab = this.crabs[i];
-      crab.update(magman, terrain, this.crabs);
+      crab.update(magman, terrain, this.crabs, dt);
 
-      // Colide apenas se não estiver soterrado e se Magman não estiver imune
+      // Causa dano se colidir e Magman não estiver imune
       if (!crab.isStuckDeep && !magman.isInvulnerable && this.checkCollision(crab, magman)) {
         onMagmanCaught("Você foi ferido por um caranguejo alienígena de Sicron!");
         return;
@@ -69,26 +74,68 @@ class SpaceCrab {
     this.legCycle = 0;
     this.isGrounded = false;
     this.isStuckDeep = false;
+
+    // Cronômetro Individual de Fuga (10 Segundos)
+    this.isTrapped = false;
+    this.trappedTimer = 0;
+    this.isLeapingOut = false;
   }
 
-  update(magman, terrain, allCrabs) {
+  update(magman, terrain, allCrabs, dt) {
     this.legCycle += 0.2;
 
-    if (!this.isStuckDeep) {
+    const groundLevelY = terrain?.groundStartY || 0;
+    const inHole = this.y > groundLevelY + 8;
+
+    // 1. MONITORAMENTO INDIVIDUAL DO TEMPO NO BURACO
+    if (inHole && !this.isLeapingOut) {
+      if (!this.isTrapped) {
+        // Entrou na fossa agora: inicia a contagem regressiva de 10s
+        this.isTrapped = true;
+        this.trappedTimer = 10.0;
+      } else {
+        // Desconta o tempo restante
+        this.trappedTimer -= dt;
+
+        // Ao esgotar os 10 segundos, executa o grande salto de escape
+        if (this.trappedTimer <= 0) {
+          this.vy = -10.8; // Força vertical suficiente para saltar de fossas de até 3 blocos
+          this.vx = this.direction * 3.2; // Projeção horizontal para a borda
+          this.isTrapped = false;
+          this.trappedTimer = 0;
+          this.isLeapingOut = true;
+          this.isStuckDeep = false;
+        }
+      }
+    } else if (!inHole && this.isGrounded) {
+      // Quando já estiver com os pés firmes na superfície, normaliza os estados
+      this.isTrapped = false;
+      this.trappedTimer = 0;
+      this.isLeapingOut = false;
+    }
+
+    // 2. MOVIMENTAÇÃO HORIZONTAL
+    if (this.isTrapped && !this.isLeapingOut) {
+      // Preso no fundo: movimenta-se devagar agitado contra as paredes
+      this.direction = magman.x > this.x ? 1 : -1;
+      this.vx = (this.speed * 0.45) * this.direction;
+      this.isStuckDeep = true;
+    } else if (!this.isLeapingOut) {
       this.direction = magman.x > this.x ? 1 : -1;
       this.vx = this.speed * this.direction;
-    } else {
-      this.vx = 0;
+      this.isStuckDeep = false;
     }
 
     this.x += this.vx;
 
+    // Gravidade
     this.vy += CONFIG.GRAVITY || 0.38;
     this.y += this.vy;
     this.isGrounded = false;
 
-    // Colisão segura com os blocos
+    // 3. FÍSICA E COLISÃO COM OS BLOCOS
     const handleBlockCollision = (b) => {
+      // Pouso em bloco
       if (
         this.x + this.width > b.x &&
         this.x < b.x + b.size &&
@@ -101,14 +148,17 @@ class SpaceCrab {
         this.isGrounded = true;
       }
 
-      if (
-        this.x < b.x + b.size &&
-        this.x + this.width > b.x &&
-        this.y < b.y + b.size &&
-        this.y + this.height - 8 > b.y
-      ) {
-        if (this.vx > 0) this.x = b.x - this.width;
-        if (this.vx < 0) this.x = b.x + b.size;
+      // Barreira de paredes: só trava se NÃO estiver no meio do salto de saída
+      if (!this.isLeapingOut) {
+        if (
+          this.x < b.x + b.size &&
+          this.x + this.width > b.x &&
+          this.y < b.y + b.size &&
+          this.y + this.height - 8 > b.y
+        ) {
+          if (this.vx > 0) this.x = b.x - this.width;
+          if (this.vx < 0) this.x = b.x + b.size;
+        }
       }
     };
 
@@ -118,14 +168,13 @@ class SpaceCrab {
       terrain.blocks.filter(b => b.active).forEach(handleBlockCollision);
     }
 
-    // Empilhamento em fossas
-    const groundLevelY = terrain?.groundStartY || 0;
-    if (this.y > groundLevelY + 10) {
+    // 4. COLISÃO ENTRE CARANGUEJOS DENTRO DO MESMO BURACO
+    if (inHole) {
       allCrabs.forEach(other => {
-        if (other !== this && Math.abs(other.x - this.x) < 20) {
+        if (other !== this && Math.abs(other.x - this.x) < 22) {
           if (
             this.y + this.height >= other.y &&
-            this.y + this.height <= other.y + 16 &&
+            this.y + this.height <= other.y + 14 &&
             this.vy >= 0
           ) {
             this.y = other.y - this.height;
@@ -134,10 +183,6 @@ class SpaceCrab {
           }
         }
       });
-
-      this.isStuckDeep = this.y > groundLevelY;
-    } else {
-      this.isStuckDeep = false;
     }
   }
 
@@ -151,6 +196,7 @@ class SpaceCrab {
     ctx.strokeStyle = this.color === '#eab308' ? '#ca8a04' : '#64748b';
     ctx.lineWidth = 2;
 
+    // Patas esquerdas
     for (let i = 0; i < 3; i++) {
       ctx.beginPath();
       ctx.moveTo(rx + 6, ry + 16 + (i * 5));
@@ -158,6 +204,7 @@ class SpaceCrab {
       ctx.stroke();
     }
 
+    // Patas direitas
     for (let i = 0; i < 3; i++) {
       ctx.beginPath();
       ctx.moveTo(rx + this.width - 6, ry + 16 + (i * 5));
@@ -165,6 +212,7 @@ class SpaceCrab {
       ctx.stroke();
     }
 
+    // Carapaça blindada
     ctx.fillStyle = this.color;
     ctx.fillRect(rx + 2, ry + 8, this.width - 4, 20);
     ctx.strokeStyle = "#1e293b";
@@ -175,17 +223,34 @@ class SpaceCrab {
     ctx.fillRect(rx + 6, ry + 13, this.width - 12, 3);
     ctx.fillRect(rx + 8, ry + 19, this.width - 16, 3);
 
-    ctx.fillStyle = "#ef4444";
+    // Efeito visual de alerta: quando faltam menos de 2.5s para pular, os olhos piscam em amarelo/laranja
+    let eyeColor = "#ef4444";
+    if (this.isTrapped && this.trappedTimer < 2.5) {
+      eyeColor = Math.floor(this.trappedTimer * 8) % 2 === 0 ? "#facc15" : "#ea580c";
+    }
+
+    ctx.fillStyle = eyeColor;
     if (this.direction > 0) {
       ctx.fillRect(rx + this.width - 8, ry + 10, 4, 4);
     } else {
       ctx.fillRect(rx + 4, ry + 10, 4, 4);
     }
 
+    // Pinças
     ctx.fillStyle = this.color;
     const clawX = this.direction > 0 ? rx + this.width - 2 : rx - 8;
     ctx.fillRect(clawX, ry + 6, 8, 10);
     ctx.strokeRect(clawX, ry + 6, 8, 10);
+
+    // Indicador sutil de carregamento do salto sobre a cabeça do caranguejo aprisionado
+    if (this.isTrapped && this.trappedTimer > 0) {
+      const barW = 20;
+      const progress = 1 - (this.trappedTimer / 10.0);
+      ctx.fillStyle = "rgba(15, 23, 42, 0.75)";
+      ctx.fillRect(rx + (this.width / 2) - (barW / 2), ry - 6, barW, 3);
+      ctx.fillStyle = progress > 0.75 ? "#facc15" : "#38bdf8";
+      ctx.fillRect(rx + (this.width / 2) - (barW / 2), ry - 6, barW * progress, 3);
+    }
 
     ctx.restore();
   }

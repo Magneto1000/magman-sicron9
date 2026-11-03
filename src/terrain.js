@@ -1,5 +1,5 @@
 /**
- * TERRENO INFINITO ADAPTATIVO (PORTRAIT & LANDSCAPE)
+ * TERRENO INFINITO UNIFICADO (5 CAMADAS PROFUNDAS)
  * Arquivo: src/terrain.js
  */
 import { CONFIG } from './config.js';
@@ -9,11 +9,8 @@ export class Terrain {
     this.canvasHeight = canvasHeight;
     this.planet = planet || {};
     this.blockSize = CONFIG.BLOCK_SIZE || 36;
-    
-    // Em telas baixas (landscape de celular), usa 3 linhas; em portrait, usa 5
-    this.rows = this.canvasHeight < 520 ? 3 : 5;
-    this.bottomPadding = this.canvasHeight < 520 ? 12 : 24;
-    this.groundStartY = this.canvasHeight - (this.rows * this.blockSize) - this.bottomPadding;
+    this.rows = 5; // 5 camadas sólidas em qualquer orientação
+    this.groundStartY = this.canvasHeight - (this.rows * this.blockSize) - 24;
 
     this.chunks = new Map();
     this.minedBlocks = new Set();
@@ -22,9 +19,7 @@ export class Terrain {
   resize(newCanvasHeight) {
     const oldStartY = this.groundStartY;
     this.canvasHeight = newCanvasHeight;
-    this.rows = this.canvasHeight < 520 ? 3 : 5;
-    this.bottomPadding = this.canvasHeight < 520 ? 12 : 24;
-    this.groundStartY = this.canvasHeight - (this.rows * this.blockSize) - this.bottomPadding;
+    this.groundStartY = this.canvasHeight - (this.rows * this.blockSize) - 24;
 
     const dy = this.groundStartY - oldStartY;
     this.chunks.forEach(b => {
