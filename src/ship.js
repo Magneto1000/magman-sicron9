@@ -1,23 +1,30 @@
 /**
- * PLATAFORMA CARGUEIRA COM FIXAÇÃO INFERIOR (CAPACIDADE 10)
+ * PLATAFORMA ORBITAL CARGUEIRA COM POSICIONAMENTO DINÂMICO
  * Arquivo: src/ship.js
  */
 import { CONFIG } from './config.js';
 
 export class CargoShip {
-  constructor(shipData) {
+  constructor(shipData, startX, canvasHeight = 600) {
     this.name = shipData.name;
-    this.capacity = 10;
-    this.width = shipData.hullWidth || 220;
-    this.height = shipData.hullHeight || 26;
-    this.x = 0;
-    this.y = 28;
+    this.capacity = CONFIG.CARGO_TARGET || 10;
+    this.width = shipData.hullWidth || 260;
+    this.height = shipData.hullHeight || 28;
+    this.x = startX;
+    
+    // Altura dinâmica: 10px em landscape curto, 28px em telas altas
+    this.y = canvasHeight < 520 ? 10 : 28;
     this.flameTimer = 0;
+
     this.cargoColumns = 5;
     this.cargoRows = 2;
-    this.boxSize = CONFIG.BLOCK_SIZE; // 36px
-    this.cargoGap = 4;
+    this.boxSize = CONFIG.BLOCK_SIZE || 36;
+    this.cargoGap = 6;
     this.cargoBlocks = [];
+  }
+
+  resize(canvasHeight) {
+    this.y = canvasHeight < 520 ? 10 : 28;
   }
 
   update(magmanX, magmanWidth) {
@@ -28,9 +35,11 @@ export class CargoShip {
 
   addCargo(mineralType) {
     if (this.cargoBlocks.length >= this.capacity) return false;
+
     const idx = this.cargoBlocks.length;
     const col = idx % this.cargoColumns;
     const row = Math.floor(idx / this.cargoColumns);
+
     this.cargoBlocks.push({ type: mineralType, col, row });
     return true;
   }
@@ -57,10 +66,9 @@ export class CargoShip {
     const rx = this.x - cameraX;
     ctx.save();
 
-    const nacelleWidth = 30;
-    const nacelleHeight = 38;
+    const nacelleWidth = 34;
+    const nacelleHeight = 40;
 
-    // Motores laterais detalhados
     const renderNacelle = (nx, ny, isLeft) => {
       ctx.fillStyle = "#1e293b";
       ctx.fillRect(nx, ny, nacelleWidth, nacelleHeight);
@@ -68,40 +76,47 @@ export class CargoShip {
       ctx.lineWidth = 1.5;
       ctx.strokeRect(nx, ny, nacelleWidth, nacelleHeight);
 
-      // Bocal inferior metálico
-      ctx.fillStyle = "#64748b";
-      ctx.fillRect(nx + 4, ny + nacelleHeight, nacelleWidth - 8, 6);
+      ctx.fillStyle = "#0f172a";
+      ctx.fillRect(nx + 4, ny + 8, nacelleWidth - 8, 3);
+      ctx.fillRect(nx + 4, ny + 14, nacelleWidth - 8, 3);
+      ctx.fillRect(nx + 4, ny + 20, nacelleWidth - 8, 3);
 
-      // Chama de plasma
-      const flameH = 12 + Math.sin(this.flameTimer + (isLeft ? 0 : 1)) * 5;
-      ctx.fillStyle = "rgba(56, 189, 248, 0.8)";
+      ctx.fillStyle = "#64748b";
+      ctx.beginPath();
+      ctx.moveTo(nx + 6, ny + nacelleHeight);
+      ctx.lineTo(nx + nacelleWidth - 6, ny + nacelleHeight);
+      ctx.lineTo(nx + nacelleWidth - 2, ny + nacelleHeight + 6);
+      ctx.lineTo(nx + 2, ny + nacelleHeight + 6);
+      ctx.closePath();
+      ctx.fill();
+
+      const flameLength = 12 + Math.sin(this.flameTimer + (isLeft ? 0 : 1)) * 5;
+      ctx.fillStyle = "rgba(56, 189, 248, 0.75)";
       ctx.beginPath();
       ctx.moveTo(nx + 4, ny + nacelleHeight + 6);
       ctx.lineTo(nx + nacelleWidth - 4, ny + nacelleHeight + 6);
-      ctx.lineTo(nx + (nacelleWidth / 2), ny + nacelleHeight + 6 + flameH);
+      ctx.lineTo(nx + (nacelleWidth / 2), ny + nacelleHeight + 6 + flameLength);
       ctx.closePath();
       ctx.fill();
     };
 
-    renderNacelle(rx - nacelleWidth + 4, this.y - 6, true);
-    renderNacelle(rx + this.width - 4, this.y - 6, false);
+    renderNacelle(rx - nacelleWidth + 6, this.y - 6, true);
+    renderNacelle(rx + this.width - 6, this.y - 6, false);
 
-    // Casco Principal da Plataforma
+    // Casco da plataforma
     ctx.fillStyle = "#334155";
     ctx.fillRect(rx, this.y, this.width, this.height);
     ctx.strokeStyle = "#94a3b8";
     ctx.lineWidth = 2;
     ctx.strokeRect(rx, this.y, this.width, this.height);
 
-    // Painel Central
     ctx.fillStyle = "#0284c7";
-    ctx.fillRect(rx + (this.width / 2) - 20, this.y + 4, 40, 6);
+    ctx.fillRect(rx + (this.width / 2) - 24, this.y + 4, 48, 6);
 
-    // Emissor Magnético Inferior
     ctx.fillStyle = "#38bdf8";
-    ctx.fillRect(rx + 6, this.y + this.height - 2, this.width - 12, 2);
+    ctx.fillRect(rx + 8, this.y + this.height - 2, this.width - 16, 2);
 
-    // Renderização dos Blocos Acoplados (10 unidades)
+    // Caixas acopladas
     const totalCargoWidth = (this.cargoColumns * this.boxSize) + ((this.cargoColumns - 1) * this.cargoGap);
     const startX = rx + (this.width - totalCargoWidth) / 2;
 

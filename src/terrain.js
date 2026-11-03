@@ -1,5 +1,5 @@
 /**
- * TERRENO INFINITO COM MINERAÇÃO REAL E ABERTURA DE FOSSAS
+ * TERRENO INFINITO ADAPTATIVO (PORTRAIT & LANDSCAPE)
  * Arquivo: src/terrain.js
  */
 import { CONFIG } from './config.js';
@@ -9,15 +9,30 @@ export class Terrain {
     this.canvasHeight = canvasHeight;
     this.planet = planet || {};
     this.blockSize = CONFIG.BLOCK_SIZE || 36;
-    this.rows = 5;
-    this.groundStartY = this.canvasHeight - (this.rows * this.blockSize) - 24;
+    
+    // Em telas baixas (landscape de celular), usa 3 linhas; em portrait, usa 5
+    this.rows = this.canvasHeight < 520 ? 3 : 5;
+    this.bottomPadding = this.canvasHeight < 520 ? 12 : 24;
+    this.groundStartY = this.canvasHeight - (this.rows * this.blockSize) - this.bottomPadding;
 
     this.chunks = new Map();
     this.minedBlocks = new Set();
   }
 
+  resize(newCanvasHeight) {
+    const oldStartY = this.groundStartY;
+    this.canvasHeight = newCanvasHeight;
+    this.rows = this.canvasHeight < 520 ? 3 : 5;
+    this.bottomPadding = this.canvasHeight < 520 ? 12 : 24;
+    this.groundStartY = this.canvasHeight - (this.rows * this.blockSize) - this.bottomPadding;
+
+    const dy = this.groundStartY - oldStartY;
+    this.chunks.forEach(b => {
+      b.y += dy;
+    });
+  }
+
   getBlock(col, row) {
-    // Proteção: NUNCA gera blocos no ar (row < 0) ou abaixo do manto (row >= rows)
     if (row < 0 || row >= this.rows) return null;
 
     const key = `${col}_${row}`;
@@ -52,9 +67,7 @@ export class Terrain {
     return (b && b.active) ? b : null;
   }
 
-  update() {
-    // Mantém a estabilidade dos blocos
-  }
+  update() {}
 
   forEachActiveBlockNear(targetX, targetY, callback) {
     const startCol = Math.floor((targetX - 100) / this.blockSize);
@@ -80,10 +93,6 @@ export class Terrain {
     const frontRow = Math.floor(((magmanY + magmanHeight - 6) - this.groundStartY) / this.blockSize);
     const chestRow = Math.floor(((magmanY + magmanHeight * 0.5) - this.groundStartY) / this.blockSize);
 
-    // Ordem de prioridade de coleta:
-    // 1. Sob os pés (abre a fossa no chão)
-    // 2. À frente no chão (escava valas à frente)
-    // 3. Na parede lateral (se já estiver dentro de um fosso)
     const targets = [
       { c: feetCol, r: feetRow },
       { c: frontCol, r: frontRow },
@@ -96,13 +105,12 @@ export class Terrain {
         if (block && block.active) {
           block.active = false;
           this.minedBlocks.add(block.id);
-          this.chunks.delete(block.id); // Remove imediatamente para abrir o buraco
+          this.chunks.delete(block.id);
           return { ...block };
         }
       }
     }
 
-    // Busca de proximidade para garantir a captura sem falhas
     const centerX = magmanX + magmanWidth / 2;
     const centerY = magmanY + magmanHeight;
     let closest = null;
@@ -138,18 +146,6 @@ export class Terrain {
     return this.groundStartY + (this.rows * this.blockSize) + 14;
   }
 
-// Adicione ou certifique-se de que este método existe dentro da classe Terrain em src/terrain.js:
-  resize(newCanvasHeight) {
-    const dy = newCanvasHeight - this.canvasHeight;
-    this.canvasHeight = newCanvasHeight;
-    this.groundStartY = this.canvasHeight - (this.rows * this.blockSize) - 24;
-
-    // Atualiza a coordenada vertical de todos os blocos já gerados
-    this.chunks.forEach(b => {
-      b.y += dy;
-    });
-  }
-
   render(ctx, cameraX, viewportWidth) {
     const coreY = this.getCoreThresholdY();
 
@@ -183,12 +179,11 @@ export class Terrain {
           ctx.fillText(b.polarityTop, screenX + (b.size / 2) - 3, b.y + 15);
 
           if (r === 0) {
-            ctx.fillStyle = this.planet.vegColor || "#22c55e";
+            ctx.fillStyle = this.planet?.vegColor || "#22c55e";
             ctx.fillRect(screenX + 2, b.y - 4, 6, 4);
             ctx.fillRect(screenX + b.size - 8, b.y - 4, 6, 4);
           }
         }
-        // Blocos minerados permanecem como espaço vazio (fossas)
       }
     }
   }

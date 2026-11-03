@@ -38,7 +38,7 @@ class MagmanApp {
     this.drawLoginAvatar();
 
     window.addEventListener('resize', () => {
-      if (this.running) this.resizeViewport();
+      this.resizeViewport();
     });
 
     const safeBind = (id, handler) => {
@@ -211,11 +211,19 @@ class MagmanApp {
       this.camera.viewportHeight = h;
     }
 
+    if (this.ship && typeof this.ship.resize === 'function') {
+      this.ship.resize(h);
+    }
+
     if (this.terrain && typeof this.terrain.resize === 'function') {
       this.terrain.resize(h);
-      if (this.magman && this.magman.y > this.terrain.groundStartY) {
-        this.magman.y = this.terrain.groundStartY - this.magman.height;
-        this.magman.vy = 0;
+
+      if (this.magman) {
+        // Se a tela encolheu, não deixa o Magman ficar soterrado
+        if (this.magman.y + this.magman.height > this.terrain.groundStartY) {
+          this.magman.y = this.terrain.groundStartY - this.magman.height;
+          this.magman.vy = 0;
+        }
       }
     }
   }
@@ -421,14 +429,12 @@ class MagmanApp {
   triggerAction() {
     if (!this.magman) return;
 
-    // AÇÃO: JOGAR (Libera o bloco em direção à plataforma orbital)
     if (this.magman.carryingRock) {
       const rock = this.magman.carryingRock;
       const bSize = CONFIG.BLOCK_SIZE || 36;
       rock.isLaunched = true;
       rock.size = bSize;
 
-      // Inicia o lançamento centralizado no astronauta no momento do arremesso
       rock.x = this.magman.x + (this.magman.width / 2) - (bSize / 2);
       rock.y = this.magman.y - bSize - 4;
       rock.vy = CONFIG.LAUNCH_IMPULSE_VY || -12.0;
@@ -439,7 +445,6 @@ class MagmanApp {
       return;
     }
 
-    // AÇÃO: PEGAR (Extrai o bloco do solo abrindo a fossa)
     const block = this.terrain.mineDirectional(
       this.magman.x,
       this.magman.y,
@@ -486,9 +491,18 @@ class MagmanApp {
     this.parallax = new BackgroundParallax(this.activePlanet);
     this.terrain = new Terrain(vHeight, this.activePlanet);
     this.particles = new ParticleSystem();
-    this.asteroids = new AsteroidBelt(2600, this.activePlanet.speedMultiplier || 1.0);
-    this.ship = new CargoShip(this.activeShip, 0);
-    this.magman = new Magman(0, vHeight - 240);
+    this.ship = new CargoShip(this.activeShip, 0, vHeight);
+
+    // CÁLCULO DINÂMICO DO CINTURÃO: Centro exato entre o fundo da nave e o solo
+    const shipBottom = this.ship.y + this.ship.height + 24;
+    const groundTop = this.terrain.groundStartY;
+    const midSkyY = shipBottom + (groundTop - shipBottom) * 0.42;
+
+    this.asteroids = new AsteroidBelt(this.activePlanet.speedMultiplier || 1.0, midSkyY);
+
+    // Pousa o Magman exatamente de pé sobre o relevo, sem sufocar contra a nave
+    const magmanStartY = this.terrain.groundStartY - 54;
+    this.magman = new Magman(0, magmanStartY);
     this.crabs = new CrabManager();
 
     this.magman.lives = 3;
@@ -514,7 +528,6 @@ class MagmanApp {
   }
 
   update(deltaSec) {
-    // 1. Cronômetro
     this.missionTimeRemaining -= deltaSec;
     if (this.missionTimeRemaining <= 0) {
       this.missionTimeRemaining = 0;
@@ -524,14 +537,12 @@ class MagmanApp {
     }
     this.updateTimerBarUI();
 
-    // 2. Avatar e Câmera
     this.magman.update(this.touchMoveDirection, this.terrain, deltaSec);
     this.camera.follow(this.magman.x);
     this.terrain.update();
     this.ship.update(this.magman.x, this.magman.width);
     this.particles.update();
 
-    // 3. Inimigos: Caranguejos
     this.crabs.updateTimer(deltaSec);
     if (this.crabs.spawnTimer === 0 && this.crabs.crabs.length < 20) {
       this.crabs.spawnWave(this.camera.x, this.viewport.width, this.terrain.groundStartY);
@@ -540,21 +551,23 @@ class MagmanApp {
       this.handleDamage(failMsg);
     });
 
-    // 4. Queda fatal
     if (this.magman.y > this.terrain.getCoreThresholdY()) {
       this.triggerGameOver("Magman desceu além da litosfera e caiu no manto superaquecido!");
       return;
     }
 
-    // 5. Asteroides em órbita com horizonte adaptativo
+    // Passa a altitude dinâmica para os asteroides manterem-se centralizados no céu
+    const shipBottom = this.ship.y + this.ship.height + 20;
+    const currentBeltY = shipBottom + (this.terrain.groundStartY - shipBottom) * 0.42;
+
     this.asteroids.update(
       this.magman,
       (failMsg) => { this.handleDamage(failMsg); },
       this.camera.x,
-      this.viewport.width
+      this.viewport.width,
+      currentBeltY
     );
 
-    // 6. Impacto de asteroides nas caixas acopladas
     const exposedBoxes = this.ship.getExposedCargoBoundingBoxes();
     this.asteroids.asteroids.forEach(ast => {
       for (let bIdx = exposedBoxes.length - 1; bIdx >= 0; bIdx--) {
@@ -575,21 +588,16 @@ class MagmanApp {
       }
     });
 
-    // 7. BLOCOS LANÇADOS (COM GUIA MAGNÉTICO EM DIREÇÃO À NAVE)
     const shipCenterX = this.ship.x + (this.ship.width / 2);
     const shipBottomY = this.ship.y + this.ship.height;
 
     for (let i = this.launchedRocks.length - 1; i >= 0; i--) {
       const rock = this.launchedRocks[i];
 
-      // ATRAÇÃO MAGNÉTICA ATIVA: Corrige a trajetória em direção à nave no ar
       const targetRockX = shipCenterX - (rock.size / 2);
-      rock.x += (targetRockX - rock.x) * 0.22; // Corrige imediatamente qualquer desvio lateral
-
-      // Subida vertical
+      rock.x += (targetRockX - rock.x) * 0.22;
       rock.y += rock.vy;
 
-      // Colisão com asteroides
       let destroyed = false;
       this.asteroids.asteroids.forEach(ast => {
         if (destroyed) return;
@@ -608,7 +616,6 @@ class MagmanApp {
         continue;
       }
 
-      // ACOPLAMENTO NA FACE INFERIOR DA PLATAFORMA
       if (
         rock.y <= shipBottomY + 16 &&
         rock.x + rock.size >= this.ship.x - 30 &&
@@ -621,7 +628,6 @@ class MagmanApp {
           const cargoHud = document.getElementById('hud-cargo');
           if (cargoHud) cargoHud.innerText = `${this.cargoCollected}/${this.activePlanet.targetCargo}`;
 
-          // Faíscas azuis de acoplamento com sucesso
           if (this.particles && typeof this.particles.emit === 'function') {
             this.particles.emit(shipCenterX, shipBottomY + 8, '#38bdf8', 16, 3.5);
           }
@@ -633,7 +639,6 @@ class MagmanApp {
         continue;
       }
 
-      // Descarta blocos que porventura passem do topo
       if (rock.y < -100) {
         this.launchedRocks.splice(i, 1);
       }
@@ -670,14 +675,12 @@ class MagmanApp {
     this.crabs.render(ctx, this.camera.x);
     this.particles.render(ctx, this.camera.x);
 
-    // RENDERIZAÇÃO DOS BLOCOS LANÇADOS COM FEIXE TRATOR MAGNÉTICO
     const shipScreenCenterX = (this.ship.x + (this.ship.width / 2)) - this.camera.x;
     const shipBottomY = this.ship.y + this.ship.height;
 
     this.launchedRocks.forEach(r => {
       const rx = r.x - this.camera.x;
 
-      // 1. Feixe Trator Magnético emitido pela nave capturando o bloco
       ctx.save();
       ctx.strokeStyle = "rgba(56, 189, 248, 0.45)";
       ctx.lineWidth = 2;
@@ -688,7 +691,6 @@ class MagmanApp {
       ctx.stroke();
       ctx.restore();
 
-      // 2. Bloco mineral
       ctx.fillStyle = r.type === 'FERRO' ? '#b91c1c' : (r.type === 'PARA' ? '#047857' : '#d97706');
       ctx.fillRect(rx, r.y, r.size, r.size);
       ctx.strokeStyle = "#ffffff";
